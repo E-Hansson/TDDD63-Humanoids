@@ -2,6 +2,7 @@ from Robot.Interface.Sensors import imu
 from Robot.Interface import robotbody
 from Robot.Actions import motion, walk
 from helpfunctions import *
+from math import pi
 
 import time
 
@@ -24,16 +25,30 @@ class StandStill:
 class LiftRightArm:
         
     def __init__ (self):
-        self.time=0.02
-        
+        self.relation("ground")
     def entry (self):
-        print("Heil!")
-        robotbody.set_left_arm_position(0-imu.get_angle()[1],0,0)
+        print("raising right arm")
+        set_right_arm_position(0,0,0,self.relation)
     
     def update (self):
-        if like(robotbody.get_left_arm_position()[0]-imu.get_angle()[1],0):
-            robotbody.set_left_arm_position(0, 0, 0)
-            return "done"
+        if like(get_right_arm_position(self.relation)[0],0):
+            return "raised"
+        
+    def exit (self):
+        print ("done")
+        
+class LowerRightArm:
+    
+    def __init__(self):
+        self.relation="ground"
+        
+    def entry (self):
+        print("lowering right arm")
+        set_left_arm_position(0, 0, 0,self.relation)
+        
+    def update (self):
+        if like(get_right_arm_position(self.relation)[0],pi/2):
+            return ("lowered")
         
     def exit (self):
         print ("done")
