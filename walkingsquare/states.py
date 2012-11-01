@@ -1,6 +1,7 @@
 from Robot.Interface.Sensors import imu
 from Robot.Interface import robotbody
 from Robot.Actions import motion, walk
+from helpfunctions import *
 
 import time
 
@@ -27,11 +28,11 @@ class LiftRightArm:
         
     def entry (self):
         print("Heil!")
-        robotbody.set_right_arm_position(0,0,0)
+        robotbody.set_left_arm_position(0-imu.get_angle()[1],0,0)
     
     def update (self):
-        print (robotbody.get_right_arm_position())
-        if robotbody.get_right_arm_position()[0]<=1.5707964 and robotbody.get_right_arm_position()[0]>=1.570796:
+        if like(robotbody.get_left_arm_position()[0]-imu.get_angle()[1],0):
+            robotbody.set_left_arm_position(0, 0, 0)
             return "done"
         
     def exit (self):
