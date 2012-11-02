@@ -6,14 +6,13 @@ from math import pi
 
 import time
 
-
 """        General motion states        """
 
 class StandStill:
     """The robot stands still and wait"""
 
-    def __init__(self):
-        self.time = 1 # 15 for webots
+    def __init__(self,timer=1):
+        self.time = timer # 15 for webots
     def entry(self):
         print("Entry still")
         motion.stand_still()
@@ -27,6 +26,24 @@ class StandStill:
         
 
 """        Walking states        """
+
+class WalkOnSpot:
+    
+    def __init__(self,time=1):
+        self.time=time
+    
+    def entry (self):
+        print("walking on spot")
+        motion.start_walk()
+        self.start_time=time.time()
+        
+    def update (self):
+        if time.time() > self.start_time + self.time:
+            return "done"
+        
+    def exit (self):
+        print("exited")
+
 
 class WalkStraight:
     """The robot walks forward some time"""
@@ -119,19 +136,19 @@ class MoveArm:
         self.arm="right"
         
     def entry (self):
-        print("raising "+self.arm+" arm")
+        print("moving "+self.arm+" arm")
         if self.arm=="right":
             set_right_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
         
         elif self.arm=="left":
-            set_left_arm_position(self.angle[0],self.angle[1],self.angle[3],self.relation)
+            set_left_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
     
     def update (self):
-        if self.arm=="right" and like(get_right_arm_position(self.relation)[0],0):
-            return "raised"
+        if self.arm=="right" and like(get_right_arm_position(self.relation)[0],self.angle[0]):
+            return "done"
         
         elif self.arm=="left" and like(get_left_arm_position(self.relation)[0],0):
-            return "raised"
+            return "done"
         
     def exit (self):
         print ("done")
@@ -144,12 +161,13 @@ class SetEyeColor:
     
     def __init__(self,red,green,blue):
         self.color=(red,green,blue)
+        print ("Changing eye color")
         
     def entry(self):
         robotbody.set_eyes_led(self.color[0],self.color[1],self.color[2])
 
     def update(self):
-        print("changing")
+        return "done"
         
     def exit(self):
         print("terminating")

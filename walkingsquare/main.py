@@ -16,6 +16,7 @@ _tDelay = 0.005
 def update():
     _program.update()
     motion.update()
+    robotbody.update()
 
 
 # Main loop

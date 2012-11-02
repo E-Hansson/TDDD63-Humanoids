@@ -13,7 +13,7 @@ from Robot.Interface.Sensors import imu
 
 #Compares two values to evaluate whether they're
 #close enough to be counted as the same
-def like (a,b,tolerance=0.0001):
+def like (a,b,tolerance=0.1):
     
     if fabs(a-b)<=tolerance:
         return True
@@ -49,7 +49,7 @@ def get_left_arm_position (relative="body"):
         return robotbody.get_left_arm_position()
     
     elif relative=="ground":
-        return (robotbody.get_left_arm_position()[0]-imu.get_angle()[1],robotbody.get_left_arm_position()[1],robotbody.get_left_arm_position()[2])
+        return (robotbody.get_left_arm_position()[0]+imu.get_angle()[1],robotbody.get_left_arm_position()[1],robotbody.get_left_arm_position()[2])
    
    
 #A function to get the right arms position
@@ -59,5 +59,5 @@ def get_right_arm_position (relative="body"):
         return robotbody.get_right_arm_position()
     
     elif relative=="ground":
-        return (robotbody.get_right_arm_position()[0]-imu.get_angle()[0],robotbody.get_right_arm_position(),robotbody.get_right_arm_position())
+        return (robotbody.get_right_arm_position()[0]+imu.get_angle()[1],robotbody.get_right_arm_position()[1],robotbody.get_right_arm_position()[2])
 
