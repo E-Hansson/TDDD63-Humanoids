@@ -4,33 +4,61 @@ import math
 
 class Program(general_fsm.StateMachine):
     def __init__(self):
-        # Create our states
+        
+        """        Create our states        """
+        
+        """ movement states """
         _stand_still = states.StandStill()
         _walk_straight = states.WalkSpeed(5, 1)
-        _lift_right_arm = states.LiftRightArm()
         _turn_left_gyro = states.TurnGyro(math.pi/2-0.4) # Adjust for bias in the imu.
-        _lower_right_arm = states.LowerRightArm()
+        
+        """ arm states """
+        _lift_right_arm = states.MoveArm("right",relation="ground")
+        _lower_right_arm = states.MoveArm("right",relation="ground")
+        
+        """ misc states """
+        _set_eye_color_blue = states.SetEyeColor(0,0,31)
+        _set_eye_color_red = states.SetEyeColor(31,0,0)
+        
+        """ system states """
         _terminate = states.Exit()
 
         # Initiate the StateMachine, and give it an initial state 
         super(Program, self).__init__(_stand_still)
         
-        # Add a bunch of states
+        
+        """        Adding the states        """
+        
+        """ motion states """
         self.add_state(_stand_still)
         self.add_state(_walk_straight)
+        self.add_state(_turn_left_gyro)
+        
+        """ arm states """
         self.add_state(_lift_right_arm)
         self.add_state(_lower_right_arm)
-        self.add_state(_turn_left_gyro)
+        
+        """ misc stats """
+        self.add_state(_set_eye_color_blue)
+        self.add_state(_set_eye_color_red)
+        
+        """ system states """
         self.add_state(_terminate)
         
-        # Add some transitions between states
+        
+        """        Adding transitions between states        """
+        
+        """ motion transitions """
         self.add_transition(_stand_still,"timeout",_walk_straight)
-
-        self.add_transition(_walk_straight,"timeout", _lift_right_arm)
-        self.add_transition(_lift_right_arm, "raised", _turn_left_gyro)
-        self.add_transition(_turn_left_gyro, "done", _lower_right_arm)
-        self.add_transition(_lower_right_arm, "lowered", _walk_straight)
+        self.add_transition(_walk_straight,"timeout", _set_eye_color_red)
+        self.add_transition(_turn_left_gyro, "done", _set_eye_color_blue)
         self.add_transition(_turn_left_gyro, "complete", _terminate)
 
+        """ arm transitions """
+        self.add_transition(_lift_right_arm, "raised", _turn_left_gyro)
+        self.add_transition(_lower_right_arm, "lowered", _walk_straight)
 
+        """ misc transitions """
+        self.add_transition(_set_eye_color_blue, "changing", _walk_straight)
+        self.add_transition(_set_eye_color_red, "changing", _lift_right_arm)
 

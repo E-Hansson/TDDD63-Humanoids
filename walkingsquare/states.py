@@ -6,6 +6,9 @@ from math import pi
 
 import time
 
+
+"""        General motion states        """
+
 class StandStill:
     """The robot stands still and wait"""
 
@@ -22,37 +25,9 @@ class StandStill:
         print("Exit still")
         motion.start_walk()
         
-class LiftRightArm:
-        
-    def __init__ (self):
-        self.relation("ground")
-    def entry (self):
-        print("raising right arm")
-        set_right_arm_position(0,0,0,self.relation)
-    
-    def update (self):
-        if like(get_right_arm_position(self.relation)[0],0):
-            return "raised"
-        
-    def exit (self):
-        print ("done")
-        
-class LowerRightArm:
-    
-    def __init__(self):
-        self.relation="ground"
-        
-    def entry (self):
-        print("lowering right arm")
-        set_left_arm_position(0, 0, 0,self.relation)
-        
-    def update (self):
-        if like(get_right_arm_position(self.relation)[0],pi/2):
-            return ("lowered")
-        
-    def exit (self):
-        print ("done")
-        
+
+"""        Walking states        """
+
 class WalkStraight:
     """The robot walks forward some time"""
 
@@ -70,6 +45,7 @@ class WalkStraight:
     def exit(self):
         print("Exit walk")
         
+
 class WalkSpeed:
     """The robot walks forward some time"""
 
@@ -88,6 +64,8 @@ class WalkSpeed:
     def exit(self):
         print("Exit walk")
 
+
+"""        Direction states        """
 
 class Turn:
     """The robot turns some time"""
@@ -129,6 +107,55 @@ class TurnGyro:
     def exit(self):
         print("Exit gyro turn")
 
+
+"""        Arm states        """
+
+class MoveArm:
+    """ a state to make the robot lift the right arm """
+    
+    def __init__ (self,arm,angle=(0,0,0),relation="body"):
+        self.relation=relation
+        self.angle=angle
+        self.arm="right"
+        
+    def entry (self):
+        print("raising "+self.arm+" arm")
+        if self.arm=="right":
+            set_right_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
+        
+        elif self.arm=="left":
+            set_left_arm_position(self.angle[0],self.angle[1],self.angle[3],self.relation)
+    
+    def update (self):
+        if self.arm=="right" and like(get_right_arm_position(self.relation)[0],0):
+            return "raised"
+        
+        elif self.arm=="left" and like(get_left_arm_position(self.relation)[0],0):
+            return "raised"
+        
+    def exit (self):
+        print ("done")
+        
+
+"""        Eye states        """
+
+class SetEyeColor:
+    """ Sets the Eye color of the robot"""
+    
+    def __init__(self,red,green,blue):
+        self.color=(red,green,blue)
+        
+    def entry(self):
+        robotbody.set_eyes_led(self.color[0],self.color[1],self.color[2])
+
+    def update(self):
+        print("changing")
+        
+    def exit(self):
+        print("terminating")
+        
+        
+"""        System states        """
 
 class Exit:
     def __init__(self):
