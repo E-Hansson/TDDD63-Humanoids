@@ -18,7 +18,9 @@ class StandStill:
         motion.stand_still()
         self.start_time = time.time()
     def update(self):
-        if time.time() > self.start_time + self.time:
+        if has_fallen():
+            return "fallen"
+        elif time.time() > self.start_time + self.time:
             return "timeout"
     def exit(self):
         print("Exit still")
@@ -58,6 +60,8 @@ class WalkStraight:
         walk.walk_forward(0.02)
 
     def update(self):
+        if has_fallen():
+            return "fallen"
         if time.time() > self.start_time + self.time:
             return "timeout"
     def exit(self):
@@ -77,6 +81,8 @@ class WalkSpeed:
         walk.walk_forward(self.speed)
 
     def update(self):
+        if has_fallen():
+            return "fallen"
         if time.time() > self.start_time + self.time:
             return "timeout"
     def exit(self):
@@ -97,6 +103,8 @@ class Turn:
         self.number_of_turns += 1
         walk.turn_left(0.4)
     def update(self):
+        if has_fallen():
+            return "fallen"
         if self.number_of_turns == 4:
             return "complete"
         if time.time() > self.start_time + self.time:
@@ -118,6 +126,8 @@ class TurnGyro:
         self.number_of_turns += 1
         walk.turn_left(0.4)
     def update(self):
+        if has_fallen():
+            return "fallen"
         if self.number_of_turns == 4:
             return "complete"
         if imu.get_angle()[2] > self.start_angle + self.angle:
@@ -134,21 +144,23 @@ class MoveArm:
     def __init__ (self,arm,angle=(0,0,0),relation="body"):
         self.relation=relation
         self.angle=angle
-        self.arm="right"
+        self.arm=arm
         
     def entry (self):
         print("moving "+self.arm+" arm")
         if self.arm=="right":
-            set_right_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
+            self.angle=set_right_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
         
         elif self.arm=="left":
             set_left_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
     
     def update (self):
-        if self.arm=="right" and like(get_right_arm_position(self.relation)[0],self.angle[0]):
+        if has_fallen():
+            return "fallen"
+        if self.arm=="right" and like(get_right_arm_position()[0],self.angle[0]):
             return "done"
         
-        elif self.arm=="left" and like(get_left_arm_position(self.relation)[0],0):
+        elif self.arm=="left" and like(get_left_arm_position()[0],self.angle[0]):
             return "done"
         
     def exit (self):
@@ -168,7 +180,10 @@ class SetEyeColor:
         robotbody.set_eyes_led(self.color[0],self.color[1],self.color[2])
 
     def update(self):
-        return "done"
+        if has_fallen():
+            return "fallen"
+        else:
+            return "done"
         
     def exit(self):
         print("terminating")

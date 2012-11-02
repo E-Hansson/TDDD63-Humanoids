@@ -11,7 +11,7 @@ from Robot.Interface.Sensors import imu
 
 """        Written by Erik            """
 
-def check_fallen():
+def has_fallen():
     
     if like(imu.get_angle()[1],0):
         return True
@@ -35,20 +35,26 @@ def like (a,b,tolerance=0.1):
 def set_left_arm_position (x,y,z,relative="body"):
     if relative=="body":
         robotbody.set_left_arm_position(x,y,z)
-    
+        return (x,y,z)
+        
     elif relative=="ground":
-        robotbody.set_left_arm_position(x-imu.get_angle()[1],y,z)
-
+        x-=imu.get_angle()[1]
+        robotbody.set_left_arm_position(x,y,z)
+        return (x,y,z)
+        
 
 #A function to set the right arms position
 #in relation to the body or the ground
 def set_right_arm_position (x,y,z,relative="body"):
     if relative=="body":
         robotbody.set_right_arm_position(x,y,z)
-    
+        return (x,y,z)
+        
     elif relative=="ground":
-        robotbody.set_right_arm_position(x-imu.get_angle()[1],y,z)
-
+        x-=imu.get_angle()[1]
+        robotbody.set_right_arm_position(x,y,z)
+        return (x,y,z)
+        
 
 #A function to get the left arms position
 #in relation to the body or the ground

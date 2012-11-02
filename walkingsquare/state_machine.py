@@ -11,7 +11,7 @@ class Program(general_fsm.StateMachine):
         _stand_still = states.StandStill()
         _walk_straight = states.WalkSpeed(5, 1)
         _turn_left_gyro = states.TurnGyro(math.pi/2-0.4) # Adjust for bias in the imu.
-        _initiat_walking = states.WalkSpeed(1,0)
+        _initiate_walking = states.WalkSpeed(1,0)
         _walk_on_spot = states.WalkSpeed(0.2,0)
                 
         """ arm states """
@@ -24,6 +24,7 @@ class Program(general_fsm.StateMachine):
         
         """ system states """
         _terminate = states.Exit()
+        _get_up = states.GetUp()
 
         # Initiate the StateMachine, and give it an initial state 
         super(Program, self).__init__(_stand_still)
@@ -35,7 +36,7 @@ class Program(general_fsm.StateMachine):
         self.add_state(_stand_still)
         self.add_state(_walk_straight)
         self.add_state(_turn_left_gyro)
-        self.add_state(_initiat_walking)
+        self.add_state(_initiate_walking)
         self.add_state(_walk_on_spot)
         
         """ arm states """
@@ -48,13 +49,14 @@ class Program(general_fsm.StateMachine):
         
         """ system states """
         self.add_state(_terminate)
+        self.add_state(_get_up)
         
         
         """        Adding transitions between states        """
         
         """ motion transitions """
-        self.add_transition(_stand_still,"timeout",_initiat_walking)
-        self.add_transition(_initiat_walking, "timeout", _set_eye_color_blue)
+        self.add_transition(_stand_still,"timeout",_initiate_walking)
+        self.add_transition(_initiate_walking, "timeout", _set_eye_color_blue)
         self.add_transition(_walk_straight,"timeout", _walk_on_spot)
         self.add_transition(_turn_left_gyro, "done", _set_eye_color_blue)
         self.add_transition(_turn_left_gyro, "complete", _terminate)
@@ -68,3 +70,12 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_set_eye_color_blue, "done", _lower_right_arm)
         self.add_transition(_set_eye_color_red, "done", _lift_right_arm)
 
+        """ error transitions """
+        self.add_transition(_stand_still, "fallen", _get_up)
+        self.add_transition(_initiate_walking, "fallen", _get_up)
+        self.add_transition(_turn_left_gyro, "fallen", _get_up)
+        self.add_transition(_walk_on_spot, "fallen", _get_up)
+        self.add_transition(_lift_right_arm, "fallen", _get_up)
+        self.add_transition(_lower_right_arm, "fallen", _get_up)
+        self.add_transition(_set_eye_color_blue, "fallen", _get_up)
+        self.add_transition(_set_eye_color_red, "fallen", _get_up)
