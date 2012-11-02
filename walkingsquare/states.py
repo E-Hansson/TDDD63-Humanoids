@@ -25,25 +25,26 @@ class StandStill:
         motion.start_walk()
         
 
-"""        Walking states        """
-
-class WalkOnSpot:
+class GetUp:
     
-    def __init__(self,time=1):
-        self.time=time
-    
+    def __init__(self,previous_state="initiat_walking"):
+        self.walking_angle
+        self.previous_state=previous_state
+        
     def entry (self):
-        print("walking on spot")
+        motion.get_up()
+        motion.stand_still()
         motion.start_walk()
-        self.start_time=time.time()
-        
+    
     def update (self):
-        if time.time() > self.start_time + self.time:
-            return "done"
-        
+        if like(imu.get_angle()[1],self.walking_angle):
+            return self.previous_state
+    
     def exit (self):
-        print("exited")
+        print("terminated")
+        
 
+"""        Walking states        """
 
 class WalkStraight:
     """The robot walks forward some time"""
@@ -85,7 +86,7 @@ class WalkSpeed:
 """        Direction states        """
 
 class Turn:
-    """The robot turns some time"""
+    """The robot turns for some time"""
     
     def __init__(self,time):
         self.time = time

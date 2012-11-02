@@ -11,6 +11,14 @@ from Robot.Interface.Sensors import imu
 
 """        Written by Erik            """
 
+def check_fallen():
+    
+    if like(imu.get_angle()[1],0):
+        return True
+    else:
+        return False
+
+
 #Compares two values to evaluate whether they're
 #close enough to be counted as the same
 def like (a,b,tolerance=0.1):
