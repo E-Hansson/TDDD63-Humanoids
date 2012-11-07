@@ -34,13 +34,10 @@ class GetUp:
         
     def entry (self):
         motion.get_up()
-        #motion.stand_still()
-        #motion.start_walk()
     
     def update (self):
-        #print(imu.get_angle())
         if like(imu.get_angle()[1],0.001):
-            return "done"
+            return ("sitting")
     
     def exit (self):
         print("terminated")

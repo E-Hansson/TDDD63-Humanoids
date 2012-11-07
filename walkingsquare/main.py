@@ -1,5 +1,6 @@
 from state_machine import Program
 from Robot.Interface import robotbody
+from Robot.Interface.Sensors import vision
 from Robot.Actions import motion
 import time
 
@@ -17,12 +18,16 @@ def update():
     _program.update()
     motion.update()
     robotbody.update()
+    vision.update()
 
+vision.entry()
 
 # Main loop
 while not robotbody.is_middle_button_pressed():
     update()
     time.sleep(_tDelay)
+
+vision.exit()
 
 
 
