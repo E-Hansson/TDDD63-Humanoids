@@ -18,6 +18,7 @@ def has_fallen():
 #Compares two values to evaluate whether they're
 #close enough to be counted as the same
 def like (a,b,tolerance=0.1):
+    
     alike=True
     if isinstance(a, tuple):
         for i in range(len(a)):

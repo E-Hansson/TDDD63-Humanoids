@@ -24,14 +24,7 @@ vision.entry()
 # Main loop
 while not robotbody.is_middle_button_pressed():
     update()
-<<<<<<< HEAD
     time.sleep(_tDelay)
+    vision.update()
     
 vision.exit()
-
-
-
-
-=======
-    time.sleep(_tDelay)
->>>>>>> 988f1e7e318fad5816bcc8cca515c6275fd8a6aa
