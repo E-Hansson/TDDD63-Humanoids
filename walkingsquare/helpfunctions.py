@@ -13,7 +13,7 @@ from Robot.Interface.Sensors import imu
 
 def has_fallen():
     
-    if like(imu.get_angle()[1],pi):
+    if like(imu.get_angle()[1],0):
         return True
     else:
         return False
