@@ -37,10 +37,10 @@ class GetUp:
     
     def update (self):
         if like(imu.get_angle()[1],0.001):
-            return ("sitting")
+            return ("done")
     
     def exit (self):
-        print("terminated")
+        print("sitting")
         
 
 """        Walking states        """

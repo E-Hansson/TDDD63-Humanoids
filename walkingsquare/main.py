@@ -20,15 +20,8 @@ def update():
     robotbody.update()
     vision.update()
 
-vision.entry()
 
 # Main loop
 while not robotbody.is_middle_button_pressed():
     update()
     time.sleep(_tDelay)
-
-vision.exit()
-
-
-
-
