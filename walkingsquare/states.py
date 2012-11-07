@@ -30,17 +30,17 @@ class StandStill:
 class GetUp:
     
     def __init__(self,previous_state="initiat_walking"):
-        self.walking_angle
         self.previous_state=previous_state
         
     def entry (self):
         motion.get_up()
-        motion.stand_still()
-        motion.start_walk()
+        #motion.stand_still()
+        #motion.start_walk()
     
     def update (self):
-        if like(imu.get_angle()[1],self.walking_angle):
-            return self.previous_state
+        #print(imu.get_angle())
+        if like(imu.get_angle()[1],0.001):
+            return "done"
     
     def exit (self):
         print("terminated")
@@ -128,8 +128,6 @@ class TurnGyro:
     def update(self):
         if has_fallen():
             return "fallen"
-        if self.number_of_turns == 4:
-            return "complete"
         if imu.get_angle()[2] > self.start_angle + self.angle:
             return "done"
     def exit(self):
@@ -145,14 +143,15 @@ class MoveArm:
         self.relation=relation
         self.angle=angle
         self.arm=arm
+        self.init_angle=angle
         
     def entry (self):
         print("moving "+self.arm+" arm")
         if self.arm=="right":
-            self.angle=set_right_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
+            self.angle=set_right_arm_position(self.init_angle[0],self.init_angle[1],self.init_angle[2],self.relation)
         
         elif self.arm=="left":
-            set_left_arm_position(self.angle[0],self.angle[1],self.angle[2],self.relation)
+            self.angle=set_left_arm_position(self.init_angle[0],self.init_angle[1],self.init_angle[2],self.relation)
     
     def update (self):
         if has_fallen():
