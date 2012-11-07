@@ -1,8 +1,4 @@
-'''
-Created on Nov 1, 2012
-
-@author: grupp 2
-'''
+# Some helpfunctions for the robot
 
 from math import fabs,pi
 from Robot.Interface import robotbody
@@ -22,12 +18,17 @@ def has_fallen():
 #Compares two values to evaluate whether they're
 #close enough to be counted as the same
 def like (a,b,tolerance=0.1):
+    alike=True
+    if isinstance(a, tuple):
+        for i in range(len(a)):
+            if not fabs(a[i]-b[i])<=tolerance:
+                alike = False
+                break
     
-    if fabs(a-b)<=tolerance:
-        return True
+    elif not fabs(a-b)<=tolerance:
+        alike = False
     
-    else:
-        return False
+    return alike
     
 def set_head_position(x,y):
     head_position = robotbody.get_head_position()
