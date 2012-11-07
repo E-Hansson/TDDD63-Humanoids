@@ -10,18 +10,33 @@ import time
 
 class TrackBall:
     
-    def __init__(self,x=0,y=0,t=0):
-        self.ball = vision.Ball(x,y,t)
+    def __init__(self):
+        self.fail="fail"
+    
     def entry(self):
-        pass
-    def update(self):
         last_ball = vision.get_ball()
-        print(last_ball)
-        set_head_position(last_ball.x, last_ball.y)
+        self.ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
+        robotbody.set_head_hardness(0.9)
+        self.wanted_head_position = set_head_position(self.ball.get_angle()[0],self.ball.get_angle()[1])
+    
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        elif like(self.wanted_head_position,robotbody.get_head_position()):
+            return "done"
+        
     def exit(self):
         pass
     
+class FollowHead:
     
+    def __init__(self):
+        self.fail="fail"
+        
+    def entry(self):
+        self.different_head=robotbody.get_head_position()[0]
+        self.start_angle=imu.get_angle()[2]
+
 class StandStill:
     """The robot stands still and wait"""
 

@@ -11,7 +11,7 @@ class Program(general_fsm.StateMachine):
         _stand_still = states.StandStill()
         _walk_straight = states.WalkSpeed(5, 1)
         _turn_left_gyro = states.TurnGyro(math.pi/2-0.4) # Adjust for bias in the imu.
-        _initiate_walking = states.WalkSpeed(1,0)
+        _initiate_walking = states.WalkSpeed(3,0)
         _walk_on_spot = states.WalkSpeed(0.2,0)
                 
         """ arm states """
@@ -31,7 +31,7 @@ class Program(general_fsm.StateMachine):
 
         # Initiate the StateMachine, and give it an initial state 
         #super(Program, self).__init__(_stand_still)
-        super(Program, self).__init__(_track_ball)
+        super(Program, self).__init__(_stand_still)
         
         
         """        Adding the states        """
@@ -47,6 +47,10 @@ class Program(general_fsm.StateMachine):
         self.add_state(_lift_right_arm)
         self.add_state(_lower_right_arm)
         
+        
+        """track states"""
+        self.add_state(_track_ball)
+        
         """ misc stats """
         self.add_state(_set_eye_color_blue)
         self.add_state(_set_eye_color_red)
@@ -60,9 +64,9 @@ class Program(general_fsm.StateMachine):
         
         """ motion transitions """
         
-        self.add_transition(_stand_still,"timeout",_turn_left_gyro)
+        self.add_transition(_stand_still,"timeout",_initiate_walking)
         self.add_transition(_turn_left_gyro, "done", _initiate_walking)
-        self.add_transition(_initiate_walking, "timeout", _walk_straight)
+        self.add_transition(_initiate_walking, "timeout", _track_ball)
         self.add_transition(_walk_straight, "timeout", _walk_straight)
 
         
@@ -75,6 +79,7 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_set_eye_color_red, "done", _lift_right_arm)
 
         """ error transitions """
+        self.add_transition(_track_ball, "fallen", _get_up)
         self.add_transition(_stand_still, "fallen", _get_up)
         self.add_transition(_initiate_walking, "fallen", _get_up)
         self.add_transition(_turn_left_gyro, "fallen", _get_up)

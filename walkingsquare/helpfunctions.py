@@ -33,7 +33,9 @@ def like (a,b,tolerance=0.1):
     
 def set_head_position(x,y):
     head_position = robotbody.get_head_position()
-    robotbody.set_head_position(head_position[0] + x, head_position[1] + y)
+    new_head_position =(head_position[0] + x, head_position[1] + y)
+    robotbody.set_head_position(new_head_position[0], new_head_position[1])
+    return new_head_position
     
     
 #A function to set the left arms position
