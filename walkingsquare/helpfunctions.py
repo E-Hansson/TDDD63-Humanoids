@@ -29,6 +29,10 @@ def like (a,b,tolerance=0.1):
     else:
         return False
     
+def set_head_position(x,y):
+    head_position = robotbody.get_head_position()
+    robotbody.set_head_position(head_position[0] + x, head_position[1] + y)
+    
     
 #A function to set the left arms position
 #in relation to the body or the ground

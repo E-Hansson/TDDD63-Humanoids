@@ -1,4 +1,4 @@
-from Robot.Interface.Sensors import imu
+from Robot.Interface.Sensors import imu, vision
 from Robot.Interface import robotbody
 from Robot.Actions import motion, walk
 from helpfunctions import *
@@ -8,6 +8,20 @@ import time
 
 """        General motion states        """
 
+class TrackBall:
+    
+    def __init__(self,x=0,y=0,t=0):
+        self.ball = vision.Ball(x,y,t)
+    def entry(self):
+        pass
+    def update(self):
+        last_ball = vision.get_ball()
+        print(last_ball)
+        set_head_position(last_ball.x, last_ball.y)
+    def exit(self):
+        pass
+    
+    
 class StandStill:
     """The robot stands still and wait"""
 
