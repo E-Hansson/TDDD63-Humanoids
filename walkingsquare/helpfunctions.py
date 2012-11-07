@@ -4,7 +4,7 @@ Created on Nov 1, 2012
 @author: grupp 2
 '''
 
-from math import fabs
+from math import fabs,pi
 from Robot.Interface import robotbody
 from Robot.Interface.Sensors import imu
 
@@ -13,7 +13,7 @@ from Robot.Interface.Sensors import imu
 
 def has_fallen():
     
-    if like(imu.get_angle()[1],0):
+    if like(imu.get_angle()[1],pi):
         return True
     else:
         return False
