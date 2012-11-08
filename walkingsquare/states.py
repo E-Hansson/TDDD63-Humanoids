@@ -8,7 +8,6 @@ import time
 
 """        General motion states        """
 
-<<<<<<< HEAD
 class CircleBall:
     
     def entry(self):
@@ -40,10 +39,8 @@ class CircleBall:
     def exit(self):
         pass
 
-class TrackBall:
-=======
+
 class FollowBall:
->>>>>>> 615faf2622eb4dcd944dd7ef0c3d4ff17c51ba3d
     
     def entry(self):
         robotbody.set_head_hardness(0.9)
