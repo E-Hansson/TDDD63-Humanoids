@@ -3,6 +3,7 @@
 from math import fabs,pi
 from Robot.Interface import robotbody
 from Robot.Interface.Sensors import imu
+from Robot.Actions import walk
 
 
 """        Written by Erik            """
@@ -31,6 +32,8 @@ def like (a,b,tolerance=0.1):
     
     return alike
     
+    
+#Not needed since get_angles from ball object seems to return relative to imu and not head
 def set_head_position(x,y):
     head_position = robotbody.get_head_position()
     new_head_position =(head_position[0] + x, head_position[1] + y)

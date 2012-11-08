@@ -13,6 +13,7 @@ class Program(general_fsm.StateMachine):
         _turn_left_gyro = states.TurnGyro(math.pi/2-0.4) # Adjust for bias in the imu.
         _initiate_walking = states.WalkSpeed(3,0)
         _walk_on_spot = states.WalkSpeed(0.2,0)
+        _start_walking = states.StartWalk(1)
                 
         """ arm states """
         _lift_right_arm = states.MoveArm("right", relation="ground")
@@ -42,6 +43,7 @@ class Program(general_fsm.StateMachine):
         self.add_state(_turn_left_gyro)
         self.add_state(_initiate_walking)
         self.add_state(_walk_on_spot)
+        self.add_state(_start_walking)
         
         """ arm states """
         self.add_state(_lift_right_arm)
@@ -66,9 +68,13 @@ class Program(general_fsm.StateMachine):
         
         self.add_transition(_stand_still,"timeout",_initiate_walking)
         self.add_transition(_turn_left_gyro, "done", _initiate_walking)
-        self.add_transition(_initiate_walking, "timeout", _track_ball)
+        self.add_transition(_initiate_walking, "timeout", _start_walking)
+        self.add_transition(_start_walking, "done", _track_ball)
         self.add_transition(_walk_straight, "timeout", _walk_straight)
 
+        """ track transitions """
+        
+        self.add_transition(_track_ball, "done", _stand_still)
         
         """ arm transitions """
         self.add_transition(_lift_right_arm, "done", _turn_left_gyro)

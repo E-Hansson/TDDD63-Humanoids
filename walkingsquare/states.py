@@ -10,32 +10,39 @@ import time
 
 class TrackBall:
     
-    def __init__(self):
-        self.fail="fail"
-    
     def entry(self):
-        last_ball = vision.get_ball()
-        self.ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
         robotbody.set_head_hardness(0.9)
-        self.wanted_head_position = set_head_position(self.ball.get_angle()[0],self.ball.get_angle()[1])
+        
+        last_ball = vision.get_ball()
+        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
+        angles=ball.get_angle()
+        robotbody.set_head_position(angles[0],angles[1])
     
     def update(self):
         if has_fallen():
             return "fallen"
-        elif like(self.wanted_head_position,robotbody.get_head_position()):
+        
+        last_ball = vision.get_ball()
+        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
+        angles=ball.get_angle()
+        robotbody.set_head_position(angles[0],angles[1])
+        
+        head_position = robotbody.get_head_position()
+        
+        print (head_position[1])
+        if like(head_position[1],pi/3):
             return "done"
         
-    def exit(self):
-        pass
-    
-class FollowHead:
-    
-    def __init__(self):
-        self.fail="fail"
+        elif not like(head_position[0],0,pi/18):
+            walk.set_velocity(0.05, 0.4, head_position[0])
+            
+        else:
+            walk.set_velocity(0.05, 0, 0)
         
-    def entry(self):
-        self.different_head=robotbody.get_head_position()[0]
-        self.start_angle=imu.get_angle()[2]
+            
+    def exit(self):
+        print ("standing in front of ball")
+
 
 class StandStill:
     """The robot stands still and wait"""
@@ -74,6 +81,25 @@ class GetUp:
 
 """        Walking states        """
 
+
+class StartWalk:
+    
+    def __init__(self,speed):
+        self.speed=speed
+        
+    def entry(self):
+        print("start walking")
+        walk.walk_forward(self.speed)
+        
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        else:
+            return "done"
+    
+    def exit(self):
+        print ("walking at speed "+str(self.speed))
+        
 class WalkStraight:
     """The robot walks forward some time"""
 
