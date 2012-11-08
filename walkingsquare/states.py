@@ -13,18 +13,14 @@ class TrackBall:
     def entry(self):
         robotbody.set_head_hardness(0.9)
         
-        last_ball = vision.get_ball()
-        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
-        angles=ball.get_angle()
+        angles=ball_angle()
         robotbody.set_head_position(angles[0],angles[1])
     
     def update(self):
         if has_fallen():
             return "fallen"
         
-        last_ball = vision.get_ball()
-        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
-        angles=ball.get_angle()
+        angles=ball_angle()
         robotbody.set_head_position(angles[0],angles[1])
         
         head_position = robotbody.get_head_position()
