@@ -8,6 +8,7 @@ import time
 
 """        General motion states        """
 
+<<<<<<< HEAD
 class CircleBall:
     
     def entry(self):
@@ -40,22 +41,21 @@ class CircleBall:
         pass
 
 class TrackBall:
+=======
+class FollowBall:
+>>>>>>> 615faf2622eb4dcd944dd7ef0c3d4ff17c51ba3d
     
     def entry(self):
         robotbody.set_head_hardness(0.9)
-        
-        last_ball = vision.get_ball()
-        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
-        angles=ball.get_angle()
-        robotbody.set_head_position(angles[0],angles[1])
     
     def update(self):
         if has_fallen():
             return "fallen"
         
-        last_ball = vision.get_ball()
-        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
-        angles=ball.get_angle()
+        if not vision.has_new_ball_observasion():
+            return "no ball"
+            
+        angles=ball_angle()
         robotbody.set_head_position(angles[0],angles[1])
         
         head_position = robotbody.get_head_position()
@@ -71,7 +71,7 @@ class TrackBall:
         
             
     def exit(self):
-        print ("standing in front of ball")
+        print ("changing state")
 
 
 class StandStill:
@@ -173,8 +173,49 @@ class WalkSpeed:
 
 """        Direction states        """
 
+
+class TrackBall:
+    
+    def __init__(self):
+        self.starting_angle=-pi/2
+        self.angle=self.starting_angle
+        self.front_and_back=False
+        self.turning=False
+        
+    def entry(self):
+        print ("Tracking ball")
+    
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        
+        if vision.has_new_ball_observation():
+            walk.turn_left(0)
+            return "found the ball"
+        
+        elif self.turning:
+            if self.start_angle + pi < imu.get_angle()[2]:
+                walk.turn_left(0)
+                self.turning=False
+            
+        elif not like(self.angle,pi/2):
+            self.angle+=pi/4
+            robotbody.set_head_position(self.angle,0)
+        
+        elif not self.front_and_back:
+            walk.turn_left(0.4)
+            self.start_angle=imu.get_angle()[2] 
+            self.angle=-pi/2
+            
+        else:
+            return "out of sight"
+
+    def exit (self):
+        print ("exit ball tracking")
+    
+
 class Turn:
-    """The robot turns for some time"""
+    """The robot turns for some timyawyawe"""
     
     def __init__(self,time):
         self.time = time

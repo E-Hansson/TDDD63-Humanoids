@@ -2,12 +2,21 @@
 
 from math import fabs,pi
 from Robot.Interface import robotbody
-from Robot.Interface.Sensors import imu
+from Robot.Interface.Sensors import imu,vision
 from Robot.Actions import walk
 
 
 """        Written by Erik            """
 
+# Returns the angles to the ball in relation to imu
+def ball_angle():
+    
+    last_ball = vision.get_ball()
+    ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
+    angles=ball.get_angle()
+    return angles
+
+# Checks if the robot has fallen
 def has_fallen():
     
     if like(imu.get_angle()[1],-pi/2) or like(imu.get_angle()[1],pi/2):
@@ -32,15 +41,7 @@ def like (a,b,tolerance=0.1):
     
     return alike
     
-    
-#Not needed since get_angles from ball object seems to return relative to imu and not head
-def set_head_position(x,y):
-    head_position = robotbody.get_head_position()
-    new_head_position =(head_position[0] + x, head_position[1] + y)
-    robotbody.set_head_position(new_head_position[0], new_head_position[1])
-    return new_head_position
-    
-    
+
 #A function to set the left arms position
 #in relation to the body or the ground
 def set_left_arm_position (x,y,z,relative="body"):
