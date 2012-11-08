@@ -8,6 +8,37 @@ import time
 
 """        General motion states        """
 
+class CircleBall:
+    
+    def entry(self):
+        print("Circle this motherfucker!")
+        robotbody.set_head_hardness(0.9)
+        
+        last_ball = vision.get_ball()
+        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
+        angles=ball.get_angle()
+        robotbody.set_head_position(angles[0],angles[1])
+        self.wanted_rotation = pi/2
+        self.rotation_progress = 0
+        
+    def update(self):
+        last_ball = vision.get_ball()
+        ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
+        angles=ball.get_angle()
+        robotbody.set_head_position(angles[0],angles[1])
+        head_position = robotbody.get_head_position()
+        
+        walk.set_velocity(0, 0.4, head_position[0])
+        self.rotation_progress -= head_position[0]/7.7
+        
+        print(self.rotation_progress)
+        if like(self.rotation_progress,self.wanted_rotation):
+            print("Rotation done")
+            return "done"
+        
+    def exit(self):
+        pass
+
 class TrackBall:
     
     def entry(self):
@@ -29,8 +60,7 @@ class TrackBall:
         
         head_position = robotbody.get_head_position()
         
-        print (head_position[1])
-        if like(head_position[1],pi/3):
+        if like(head_position[1],pi/3.5):
             return "done"
         
         elif not like(head_position[0],0,pi/18):

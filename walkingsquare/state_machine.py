@@ -19,8 +19,9 @@ class Program(general_fsm.StateMachine):
         _lift_right_arm = states.MoveArm("right", relation="ground")
         _lower_right_arm = states.MoveArm("right",angle=(math.pi/2,0,0),relation="ground")
         
-        """ track states"""
+        """ ball interaction states"""
         _track_ball = states.TrackBall()
+        _circle_ball = states.CircleBall()
         
         """ misc states """
         _set_eye_color_blue = states.SetEyeColor(0,0,31)
@@ -50,8 +51,9 @@ class Program(general_fsm.StateMachine):
         self.add_state(_lower_right_arm)
         
         
-        """track states"""
+        """ball interaction states"""
         self.add_state(_track_ball)
+        self.add_state(_circle_ball)
         
         """ misc stats """
         self.add_state(_set_eye_color_blue)
@@ -70,7 +72,8 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_turn_left_gyro, "done", _initiate_walking)
         self.add_transition(_initiate_walking, "timeout", _start_walking)
         self.add_transition(_start_walking, "done", _track_ball)
-        self.add_transition(_walk_straight, "timeout", _walk_straight)
+        self.add_transition(_track_ball, "done", _circle_ball)
+        self.add_transition(_circle_ball, "done", _walk_straight)
 
         """ track transitions """
         
