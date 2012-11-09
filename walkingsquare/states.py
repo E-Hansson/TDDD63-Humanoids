@@ -1,6 +1,6 @@
 from Robot.Interface.Sensors import imu, vision
 from Robot.Interface import robotbody
-from Robot.Actions import motion, walk
+from Robot.Actions import motion, walk, kick
 from helpfunctions import *
 from math import pi, fabs
 
@@ -16,36 +16,67 @@ class CircleBall:
         
         angles=ball_angle()
         robotbody.set_head_position(angles[0],angles[1])
-        self.wanted_rotation = pi
+        self.wanted_rotation = pi/2
         self.rotation_progress = 0
         
     def update(self):
+        
+        if has_fallen():
+            return "fallen"
         
         angles=ball_angle()
         robotbody.set_head_position(angles[0],angles[1])
         head_position = robotbody.get_head_position()
         
-        walk.set_velocity(0, 0.4, head_position[0])
-        self.rotation_progress -= head_position[0]/7.5
+        walk.set_velocity(0, 0.4, head_position[0]*1.2)
+        self.rotation_progress -= head_position[0]/7.3
         
         if like(self.rotation_progress,self.wanted_rotation):
-            print("Rotation done")
             return "done"
         
     def exit(self):
-        pass
+        print("Rotation done")
 
-
-class FollowBall:
+class KickBall:
     
     def entry(self):
-        robotbody.set_head_hardness(0.9)
+        print ("kicking the ball")
+        self.time=3
+        kick.forward_right()
+        robotbody.set_head_position(robotbody.get_head_position()[0], 0)
+        self.start_time = time.time()
+        
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        
+        if time.time()>self.time+self.start_time:
+            return "done"
+        
+    
+    def exit(self):
+        print ("kicked the ball")
+    
+class FollowBall:
+    
+    def __init__(self,distance=pi/3.8):
+        self.distance=distance        
+        #self.speed_change_distance=5
+        #self.fast=0.1
+        #self.slow=0.05
+        
+        self.speed=0.05
+        
+    def entry(self):
+        print("following the ball")
+        robotbody.set_head_hardness(0.95)
     
     def update(self):
         if has_fallen():
             return "fallen"
         
         if not vision.has_new_ball_observation():
+            walk.set_velocity(self.speed, 0, 0)
             return "no ball"
             
         angles=ball_angle()
@@ -53,18 +84,24 @@ class FollowBall:
         
         head_position = robotbody.get_head_position()
         
-        if like(head_position[1],pi/3.5):
+        if like(head_position[1],self.distance):
             return "done"
         
-        elif not like(head_position[0],0,pi/18):
-            walk.set_velocity(0.05, 0.4, head_position[0])
+        #if head_position[1]>self.speed_change_distance:
+          #  self.speed=self.slow
+            
+        #elif head_position[1]<self.speed_change_distance:
+         #   self.speed=self.fast
+            
+        if not like(head_position[0],0,pi/18):
+            walk.set_velocity(self.speed, 0.4, head_position[0])
             
         else:
-            walk.set_velocity(0.05, 0, 0)
+            walk.set_velocity(self.speed, 0, 0)
         
             
     def exit(self):
-        print ("changing state")
+        print ("standing in front of ball")
 
 
 class StandStill:
@@ -87,9 +124,6 @@ class StandStill:
         
 
 class GetUp:
-    
-    def __init__(self,previous_state="initiat_walking"):
-        self.previous_state=previous_state
         
     def entry (self):
         motion.get_up()
@@ -172,17 +206,30 @@ class TrackBall:
         
     def entry(self):
         print ("Tracking ball")
-        self.starting_angle=[-pi/2,0]
-        self.angle=self.starting_angle
-        self.front_and_back=False
-        self.turning=False
-        self.checked=False
+        robotbody.set_head_hardness(1.95)
+        current_head_position=robotbody.get_head_position()
+        self.wanted_head_position=[current_head_position[0],current_head_position[1]]
+        self.start_angle = imu.get_angle()[2]
+        self.angle=2*pi
         
-        robotbody.set_head_position(self.starting_angle[0], self.starting_angle[1])
-    
+        walk.turn_left(0.4)
+        robotbody.set_head_position(self.wanted_head_position[0],self.wanted_head_position[1])
+        
     def update(self):
-        temp=robotbody.get_head_position()
+        head_position=robotbody.get_head_position()
+        if like(head_position,self.wanted_head_position):
+            if like(head_position[0],pi/2) and like(head_position[1],0):
+                self.wanted_head_position=[-pi/2,pi/3.5]
         
+            elif like(head_position[0],pi/2):
+                self.wanted_head_position=[-pi/2,0]
+        
+            else:
+                self.wanted_head_position[0]=head_position[0]+pi/15
+            
+            robotbody.set_head_position(self.wanted_head_position[0],self.wanted_head_position[1])
+            
+            
         if has_fallen():
             return "fallen"
         
@@ -190,35 +237,11 @@ class TrackBall:
             walk.turn_left(0)
             return "done"
         
-        if like (self.angle[0],pi/2):
-            self.checked=True
-            self.angle[0]=-pi/2
-            
-        elif like(temp[0],self.angle[0]) and like(temp[1],self.angle[1]) and not self.checked:
-            if like (temp[1],0):
-                self.angle[1]=pi/3.5
-            else:
-                self.angle[0]+=pi/8
-                self.angle[1]=0
-            robotbody.set_head_position(self.angle[0],self.angle[1])
-       
-        elif self.turning:
-            if self.start_angle + pi < imu.get_angle()[2]:
-                walk.turn_left(0)
-                self.turning=False
-                self.checked=False
-                self.front_and_back=True
-                robotbody.set_head_position(self.angle[0], 0)
-        
-        elif self.checked and not self.front_and_back:
-            walk.turn_left(0.4)
-            self.start_angle=imu.get_angle()[2] 
-            self.turning=True
-            
-        elif self.front_and_back and not self.turning and self.checked:
+        if imu.get_angle()[2] > self.start_angle + self.angle:
             return "out of sight"
-
+        
     def exit (self):
+        robotbody.set_head_position(0, 0)
         print ("exit ball tracking")
     
 

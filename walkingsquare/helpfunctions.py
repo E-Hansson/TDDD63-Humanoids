@@ -8,6 +8,7 @@ from Robot.Actions import walk
 
 """        Written by Erik            """
 
+        
 # Returns the angles to the ball in relation to imu
 def ball_angle():
     
@@ -19,7 +20,8 @@ def ball_angle():
 # Checks if the robot has fallen
 def has_fallen():
     
-    if like(imu.get_angle()[1],-pi/2) or like(imu.get_angle()[1],pi/2):
+    if like(imu.get_angle()[1],-pi/2,pi/4) or like(imu.get_angle()[1],pi/2,pi/4)\
+        or like(imu.get_angle()[0],-pi/2,pi/4) or like(imu.get_angle()[0],pi/2,pi/4):
         return True
     else:
         return False
@@ -30,7 +32,7 @@ def has_fallen():
 def like (a,b,tolerance=0.1):
     
     alike=True
-    if isinstance(a, tuple):
+    if isinstance(a, tuple) or isinstance(a,list):
         for i in range(len(a)):
             if not fabs(a[i]-b[i])<=tolerance:
                 alike = False
