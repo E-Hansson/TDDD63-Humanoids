@@ -4,7 +4,7 @@ import math
 
 class Program(general_fsm.StateMachine):
     def __init__(self):
-        
+        #self.robocom = "http://192.168.0.5:5000/"
         """        Create our states        """
         
         """ movement states """
@@ -17,11 +17,15 @@ class Program(general_fsm.StateMachine):
                 
         """ arm states """
         _lift_right_arm = states.MoveArm("right", relation="ground")
+        _lift_left_arm = states.MoveArm("left", relation="ground")
         _lower_right_arm = states.MoveArm("right",angle=(math.pi/2,0,0),relation="ground")
         
         """ ball interaction states"""
-        _track_ball = states.TrackBall()
+        _follow_ball = states.FollowBall()
         _circle_ball = states.CircleBall()
+        _track_ball = states.TrackBall()
+        _stand_in_front_of_ball = states.FollowBall(math.pi/3.1)
+        _kick_ball = states.KickBall()
         
         """ misc states """
         _set_eye_color_blue = states.SetEyeColor(0,0,31)
@@ -48,12 +52,15 @@ class Program(general_fsm.StateMachine):
         
         """ arm states """
         self.add_state(_lift_right_arm)
+        self.add_state(_lift_left_arm)
         self.add_state(_lower_right_arm)
         
         
         """ball interaction states"""
-        self.add_state(_track_ball)
+        self.add_state(_follow_ball)
         self.add_state(_circle_ball)
+        self.add_state(_kick_ball)
+        self.add_state(_stand_in_front_of_ball)
         
         """ misc stats """
         self.add_state(_set_eye_color_blue)
@@ -63,32 +70,33 @@ class Program(general_fsm.StateMachine):
         self.add_state(_terminate)
         self.add_state(_get_up)
         
+        self.add_state(_track_ball)
         
         """        Adding transitions between states        """
         
         """ motion transitions """
         
         self.add_transition(_stand_still,"timeout",_initiate_walking)
-        self.add_transition(_turn_left_gyro, "done", _initiate_walking)
-        self.add_transition(_initiate_walking, "timeout", _start_walking)
-        self.add_transition(_start_walking, "done", _track_ball)
-        self.add_transition(_track_ball, "done", _circle_ball)
-        self.add_transition(_circle_ball, "done", _walk_straight)
+        self.add_transition(_initiate_walking, "timeout", _track_ball)
+        self.add_transition(_follow_ball, "done", _circle_ball)
+        self.add_transition(_circle_ball, "done", _stand_in_front_of_ball)
+        self.add_transition(_stand_in_front_of_ball, "done", _kick_ball)
+        self.add_transition(_kick_ball, "done", _track_ball)
+        self.add_transition(_walk_straight, "timeout", _track_ball)
 
         """ track transitions """
         
-        self.add_transition(_track_ball, "done", _stand_still)
+        self.add_transition(_track_ball,"done",_follow_ball)
+        self.add_transition(_follow_ball, "no ball", _track_ball)
+        self.add_transition(_stand_in_front_of_ball, "no ball", _track_ball)
+        self.add_transition(_track_ball, "out of sight", _walk_straight)
         
-        """ arm transitions """
-        self.add_transition(_lift_right_arm, "done", _turn_left_gyro)
-        self.add_transition(_lower_right_arm, "done", _walk_straight)
 
-        """ misc transitions """
-        self.add_transition(_set_eye_color_blue, "done", _lower_right_arm)
-        self.add_transition(_set_eye_color_red, "done", _lift_right_arm)
 
         """ error transitions """
+        self.add_transition(_circle_ball, "fallen", _get_up)
         self.add_transition(_track_ball, "fallen", _get_up)
+        self.add_transition(_follow_ball, "fallen", _get_up)
         self.add_transition(_stand_still, "fallen", _get_up)
         self.add_transition(_initiate_walking, "fallen", _get_up)
         self.add_transition(_turn_left_gyro, "fallen", _get_up)
@@ -98,5 +106,4 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_set_eye_color_blue, "fallen", _get_up)
         self.add_transition(_set_eye_color_red, "fallen", _get_up)
         self.add_transition(_walk_straight, "fallen", _get_up)
-        self.add_transition(_get_up, "initiat_walking", _initiate_walking)
         self.add_transition(_get_up, "done", _stand_still)

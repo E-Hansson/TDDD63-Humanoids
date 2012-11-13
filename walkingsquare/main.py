@@ -3,6 +3,7 @@ from Robot.Interface import robotbody
 from Robot.Interface.Sensors import vision
 from Robot.Actions import motion
 import time
+#import urllib2
 
 # Instantiate the program class
 _program = Program()
@@ -19,6 +20,11 @@ def update():
     motion.update()
     robotbody.update()
     vision.update()
+    #opener = urllib2.build_opener()
+    #opener.addheaders = [('User-agent', 'Bawlinator')]
+    #infile = opener.open(_program.robocom)
+    #page = infile.read()
+    #print(page)
 
 
 vision.entry()
