@@ -8,6 +8,7 @@ from Robot.Actions import walk
 
 """        Written by Erik            """
 
+
 # Returns the angles to the ball in relation to imu
 def ball_angle():
     
