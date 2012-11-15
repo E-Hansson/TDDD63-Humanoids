@@ -200,6 +200,35 @@ class WalkSpeed:
 
 """        Direction states        """
 
+class TrackGoal:
+    
+    def entry(self):
+        print ("Tracking ball")
+        robotbody.set_head_hardness(1.95)
+        current_head_position=robotbody.get_head_position()
+        self.wanted_head_position=[current_head_position[0],current_head_position[1]]
+        self.start_angle = imu.get_angle()[2]
+        self.angle=2*pi
+        
+        walk.turn_left(0.4)
+        robotbody.set_head_position(self.wanted_head_position[0],self.wanted_head_position[1])
+    
+    def update(self):
+        head_position=robotbody.get_head_position()
+        if like(head_position,self.wanted_head_position):
+            if like(head_position[0],pi/2) and like(head_position[1],0):
+                self.wanted_head_position=[-pi/2,0]
+                
+            elif like(head_position[0],pi/2):
+                self.wanted_head_position=[-pi/2,0]
+        
+            else:
+                self.wanted_head_position[0]=head_position[0]+pi/15
+            
+            robotbody.set_head_position(self.wanted_head_position[0],self.wanted_head_position[1])
+    
+    def exit(self):
+        pass
 
 class TrackBall:
     

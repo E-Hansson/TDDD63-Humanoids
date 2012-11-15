@@ -27,6 +27,9 @@ class Program(general_fsm.StateMachine):
         _stand_in_front_of_ball = states.FollowBall(math.pi/3.1)
         _kick_ball = states.KickBall()
         
+        """ goal interaction states"""
+        _track_goal = states.TrackGoal()
+        
         """ misc states """
         _set_eye_color_blue = states.SetEyeColor(0,0,31)
         _set_eye_color_red = states.SetEyeColor(31,0,0)
@@ -61,6 +64,9 @@ class Program(general_fsm.StateMachine):
         self.add_state(_circle_ball)
         self.add_state(_kick_ball)
         self.add_state(_stand_in_front_of_ball)
+        
+        """goal interaction states"""
+        self.add_state(_track_goal)
         
         """ misc stats """
         self.add_state(_set_eye_color_blue)
