@@ -22,7 +22,8 @@ class Program(general_fsm.StateMachine):
         
         """ ball interaction states"""
         _follow_ball = states.FollowBall()
-        _circle_ball = states.CircleBall()
+        _circle_ball = states.CircleBall(math.pi/2,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8])
+        _adjust_aim = states.CircleBall(math.pi/8,[0,-math.pi/8],[0,-math.pi/8])
         _track_ball = states.TrackBall()
         _re_find_ball = states.TrackBall()
         _stand_in_front_of_ball = states.FollowBall(math.pi/3.1)
@@ -63,6 +64,7 @@ class Program(general_fsm.StateMachine):
         """ball interaction states"""
         self.add_state(_follow_ball)
         self.add_state(_circle_ball)
+        self.add_state(_adjust_aim)
         self.add_state(_kick_ball)
         self.add_state(_stand_in_front_of_ball)
         self.add_state(_re_find_ball)
@@ -87,7 +89,10 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_stand_still,"timeout",_initiate_walking)
         self.add_transition(_initiate_walking, "timeout", _track_ball)
         self.add_transition(_follow_ball, "done", _circle_ball)
-        self.add_transition(_circle_ball, "done", _stand_in_front_of_ball)
+        self.add_transition(_circle_ball, "needs adjusting", _adjust_aim)
+        self.add_transition(_adjust_aim, "needs adjusting", _adjust_aim)
+        self.add_transition(_circle_ball, "lined up", _stand_in_front_of_ball)
+        self.add_transition(_adjust_aim, "lined up", _stand_in_front_of_ball)
         self.add_transition(_stand_in_front_of_ball, "done", _kick_ball)
         self.add_transition(_kick_ball, "done", _track_ball)
         self.add_transition(_walk_straight, "timeout", _track_ball)
