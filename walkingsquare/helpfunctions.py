@@ -1,6 +1,6 @@
 # Some helpfunctions for the robot
 
-from math import fabs,pi
+from math import fabs,pi,tan
 from Robot.Interface import robotbody
 from Robot.Interface.Sensors import imu,vision
 from Robot.Actions import walk
@@ -8,7 +8,11 @@ from Robot.Actions import walk
 
 """        Written by Erik            """
 
-        
+def distance_to_ball():
+    
+    return tan(pi/2-robotbody.get_head_position()[1])
+
+
 # Returns the angles to the ball in relation to imu
 def ball_angle():
     
