@@ -10,6 +10,9 @@ import time
 
 class CircleBall:
     
+    def __init__(self,intervall):
+        self.rotation_intervall = intervall
+    
     def entry(self):
         print("Circle this motherfucker!")
         robotbody.set_head_hardness(0.9)
@@ -28,8 +31,8 @@ class CircleBall:
         self.looking_for_goal = True
         robotbody.set_head_position(self.head_start[0], self.head_start[1])
         
-    def set_wanted_rotation(self, wanted_rotation):
-        self.wanted_rotation = wanted_rotation
+    def set_wanted_rotation(self, rotation_intervall):
+        self.rotation_intervall = rotation_intervall
         
     def init_goal_check(self):
             self.looking_for_goal = True
@@ -64,7 +67,7 @@ class CircleBall:
             walk.set_velocity(0, 0.4, head_position[0]*1.2)
             self.rotation_progress -= head_position[0]/7.3
         
-            if like(self.rotation_progress,self.wanted_rotation):
+            if like(self.rotation_progress,self.rotation_intervall):
                 self.init_goal_check()
         
     def exit(self):
