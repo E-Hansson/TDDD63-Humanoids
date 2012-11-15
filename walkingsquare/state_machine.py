@@ -24,11 +24,12 @@ class Program(general_fsm.StateMachine):
         _follow_ball = states.FollowBall()
         _circle_ball = states.CircleBall()
         _track_ball = states.TrackBall()
+        _re_find_ball = states.TrackBall()
         _stand_in_front_of_ball = states.FollowBall(math.pi/3.1)
         _kick_ball = states.KickBall()
         
         """ goal interaction states"""
-        _track_goal = states.TrackGoal()
+        _track_goal = states.TrackGoal(_circle_ball)
         
         """ misc states """
         _set_eye_color_blue = states.SetEyeColor(0,0,31)
@@ -64,6 +65,7 @@ class Program(general_fsm.StateMachine):
         self.add_state(_circle_ball)
         self.add_state(_kick_ball)
         self.add_state(_stand_in_front_of_ball)
+        self.add_state(_re_find_ball)
         
         """goal interaction states"""
         self.add_state(_track_goal)
@@ -92,6 +94,8 @@ class Program(general_fsm.StateMachine):
 
         """ track transitions """
         
+        #self.add_transition(_track_goal, "done", _re_find_ball)
+        #self.add_transition(_re_find_ball, "done", _circle_ball)
         self.add_transition(_track_ball,"done",_follow_ball)
         self.add_transition(_follow_ball, "no ball", _track_ball)
         self.add_transition(_stand_in_front_of_ball, "no ball", _track_ball)
@@ -100,6 +104,7 @@ class Program(general_fsm.StateMachine):
 
 
         """ error transitions """
+        self.add_transition(_track_goal, "fallen", _get_up)
         self.add_transition(_circle_ball, "fallen", _get_up)
         self.add_transition(_track_ball, "fallen", _get_up)
         self.add_transition(_follow_ball, "fallen", _get_up)
