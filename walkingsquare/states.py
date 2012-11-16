@@ -85,6 +85,8 @@ class CircleBall:
     def exit(self):
         print("Rotation done")
 
+
+#A Simple state to kick the ball, wait some time for the robot to regain it's football
 class KickBall:
     
     def entry(self):
@@ -105,16 +107,15 @@ class KickBall:
     def exit(self):
         print ("kicked the ball")
     
+    
+#A class which follows the ball and stops when the angle of the head is close enough
 class FollowBall:
     
     def __init__(self,distance=pi/3.8):
         self.distance=distance        
-        #self.speed_change_distance=5
-        #self.fast=0.1
-        #self.slow=0.05
-        
         self.speed=0.05
-        
+    
+    #FSM methods
     def entry(self):
         print("following the ball")
         robotbody.set_head_hardness(0.95)
@@ -126,20 +127,12 @@ class FollowBall:
         if not vision.has_new_ball_observation():
             walk.set_velocity(self.speed, 0, 0)
             return "no ball"
-            
-        angles=ball_angle()
-        robotbody.set_head_position(angles[0],angles[1])
         
+        self.update_head_position()
         head_position = robotbody.get_head_position()
         
         if like(head_position[1],self.distance):
             return "done"
-        
-        #if head_position[1]>self.speed_change_distance:
-          #  self.speed=self.slow
-            
-        #elif head_position[1]<self.speed_change_distance:
-         #   self.speed=self.fast
             
         if not like(head_position[0],0,pi/18):
             walk.set_velocity(self.speed, 0.4, head_position[0])
@@ -150,7 +143,11 @@ class FollowBall:
             
     def exit(self):
         print ("standing in front of ball")
-
+    
+    #Methods used by the FSM
+    def update_head_position(self):
+        angles=ball_angle()
+        robotbody.set_head_position(angles[0],angles[1])
 
 class StandStill:
     """The robot stands still and wait"""
@@ -171,6 +168,7 @@ class StandStill:
         motion.start_walk()
         
 
+#A state to get the robot to stand up after falling
 class GetUp:
         
     def entry (self):
@@ -248,6 +246,7 @@ class WalkSpeed:
 
 """        Direction states        """
 
+#A State to find the goal
 class TrackGoal:
     
     def __init__(self, circle_ball):
@@ -293,6 +292,8 @@ class TrackGoal:
         robotbody.set_head_position(0, 0)
         print ("exit goal tracking")
 
+
+#A State to find the ball on the field
 class TrackBall:
     
         
