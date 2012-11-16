@@ -39,7 +39,6 @@ class Program(general_fsm.StateMachine):
         """ system states """
         _terminate = states.Exit()
         _get_up = states.GetUp()
-
         # Initiate the StateMachine, and give it an initial state 
         #super(Program, self).__init__(_stand_still)
         super(Program, self).__init__(_stand_still)

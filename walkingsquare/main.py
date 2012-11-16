@@ -1,4 +1,4 @@
-from state_machine import Program
+from demo import Program
 from Robot.Interface import robotbody
 from Robot.Interface.Sensors import vision
 from Robot.Actions import motion
