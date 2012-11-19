@@ -10,6 +10,11 @@ from help_functions import *
 from math import pi, fabs
 
 
+"""
+Sets the head position to face the middle of the goal if it can find two pillars within 180 degrees.
+Sets the head position to one of the pillar if it can only find one.
+Otherwise calls it a fail.
+"""
 
 class FindMiddleOfGoal:
     
