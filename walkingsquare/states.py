@@ -60,7 +60,7 @@ class DemoCircleBall:
         
         if has_fallen():
             return "fallen"
-      """  
+        """  
         if(self.looking_for_goal):
             self.check_for_goal()
             if vision.has_new_goal_observation():
@@ -73,15 +73,15 @@ class DemoCircleBall:
                     return "needs adjusting"
         else:
             """
-            angles=ball_angle()
-            robotbody.set_head_position(angles[0],angles[1])
-            head_position = robotbody.get_head_position()
+        angles=ball_angle()
+        robotbody.set_head_position(angles[0],angles[1])
+        head_position = robotbody.get_head_position()
         
-            walk.set_velocity(0, 0.4, head_position[0]*1.2)
-            self.rotation_progress -= head_position[0]/7.3
+        walk.set_velocity(0, 0.4, head_position[0]*1.2)
+        self.rotation_progress -= head_position[0]/7.3
         
-            if like(self.rotation_progress,self.rotation_intervall):
-                return "done"
+        if like(self.rotation_progress,self.rotation_intervall):
+            return "done"
         
     def exit(self):
         print("Rotation done")
