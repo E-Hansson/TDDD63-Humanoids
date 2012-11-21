@@ -2,7 +2,7 @@ from Robot.Interface.Sensors import imu, vision
 from Robot.Interface import robotbody
 from Robot.Actions import motion, walk, kick
 from help_functions import *
-from math import pi, fabs
+from math import pi, fabs, tan
 
 import time
 
@@ -192,8 +192,10 @@ class FollowBall:
     
     def __init__(self,distance=pi/3.8):
         self.distance=distance        
-        self.speed=0.05
-    
+        self.speed=0.1
+        self.last_distance=1000
+        self.last_observation_of_ball=-1
+        
     #FSM methods
     def entry(self):
         print("following the ball")
@@ -204,20 +206,25 @@ class FollowBall:
             return "fallen"
         
         if not vision.has_new_ball_observation():
-            walk.set_velocity(self.speed, 0, 0)
-            return "no ball"
+            if self.last_obeservation_of_ball+1<time.time() or self.last_distance>=tan(5*pi/12):
+                walk.set_velocity(self.speed, 0, 0)
+                return "no ball"
         
-        self.update_head_position()
-        head_position = robotbody.get_head_position()
-        
-        if like(head_position[1],self.distance):
-            return "done"
-            
-        if not like(head_position[0],0,pi/18):
-            walk.set_velocity(self.speed, 0.4, head_position[0])
-            
         else:
-            walk.set_velocity(self.speed, 0, 0)
+            self.update_head_position()
+            head_position = robotbody.get_head_position()
+            
+            self.last_observation_of_ball=time.time()
+            self.last_distance=distance_to_ball()
+            
+            if like(head_position[1],self.distance):
+                return "done"
+                
+            if not like(head_position[0],0,pi/18):
+                walk.set_velocity(self.speed, 0.4, head_position[0])
+                
+            else:
+                walk.set_velocity(self.speed, 0, 0)
         
             
     def exit(self):
@@ -325,6 +332,99 @@ class WalkSpeed:
 
 """        Direction states        """
 
+"""
+Sets the head position to face the middle of the goal if it can find two pillars within 180 degrees.
+Sets the head position to one of the pillar if it can only find one.
+Otherwise calls it a fail.
+"""
+
+class FindMiddleOfGoal:
+    
+    """FSM methods"""
+    
+    def entry(self):
+        robotbody.set_head_hardness(1.95)
+        self.current_head_position=robotbody.get_head_position()
+        
+        self.wanted_head_position=[-pi/2,0]
+        robotbody.set_head_position_list(self.wanted_head_position)
+           
+        self.ending=False
+        
+        self.numbers_of_observation=0
+        self.angles=[]
+        
+        print ("searching for goal")
+        
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        
+        self.current_head_position=robotbody.get_head_position()
+        
+        if like(self.wanted_head_position,self.current_head_position):
+
+            if self.ending:
+                return "focus_one"
+            
+            elif len(self.angles)==0:
+                if vision.has_new_goal_observation():
+                    self.get_goal_observation()
+                    self.searching_for_next()
+                    
+                elif like(self.current_head_position[0],pi/2):
+                    return "fail"
+                
+                else:
+                    self.set_next_head_position()
+            
+            elif len(self.angles)==1:
+                if vision.has_new_goal_observation():
+                    self.get_goal_observation()
+                    self.focus_middle()
+                    
+                else:
+                    self.set_next_head_position()
+            
+            else:
+                return "focus_middle"
+
+    
+    def exit(self):
+        pass
+    
+    
+    """Methods used by the update method"""
+    def get_goal_observation(self):
+        
+        temp_angles=goal_angle()
+        
+        if len(self.angles)==0 or not like(temp_angles,self.angles[0]):
+            self.angles.append(temp_angles)
+        
+        else:
+            self.focus_one()
+            self.ending=True
+        
+    def searching_for_next(self):
+        self.wanted_head_position=[pi/2,0]
+        robotbody.set_head_position_list(self.wanted_head_position)
+               
+    def focus_middle(self):
+        self.wanted_head_position=[(self.angles[0][0]+self.angles[1][0])/2,0]
+        robotbody.set_head_position_list(self.wanted_head_position)    
+            
+    def focus_one(self):
+        self.wanted_head_position=[self.angles[0]]
+        robotbody.set_head_position_list(self.wanted_head_position)
+        
+    def set_next_head_position(self):
+        if len(self.angles)==0:
+            self.wanted_head_position[0]+=pi/15
+        else:
+            self.wanted_head_position[0]-=pi/15
+        robotbody.set_head_position_list(self.wanted_head_position)
+
 #A State to find the goal
 class TrackGoal:
     
@@ -384,7 +484,7 @@ class TrackBall:
         self.start_angle = imu.get_angle()[2]
         self.angle=2*pi
         
-        walk.turn_left(0.4)
+        walk.turn_left(0.2)
         robotbody.set_head_position(self.wanted_head_position[0],self.wanted_head_position[1])
         
     def update(self):
@@ -457,6 +557,7 @@ class TurnGyro:
         if imu.get_angle()[2] > self.start_angle + self.angle:
             return "done"
     def exit(self):
+        walk.turn_left(0)
         print("Exit gyro turn")
 
 

@@ -4,9 +4,88 @@ from Robot.Interface.Sensors import vision, imu
 from Robot.Interface import robotbody
 from Robot.Actions import walk, motion
 from math import pi
-from help_functions import has_fallen, ball_angle, like
+from help_functions import has_fallen, ball_angle, like, goal_angle
 import time
 
+class FaceMiddleOfGoal:
+    
+
+    def entry(self):
+        
+        self.head_position=robotbody.get_head_position()
+        walk.set_velocity(0, 0.4, self.head_position[0])
+        robotbody.set_head_position(0, pi/3.2)
+        print("turning towards the goal")
+        
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        
+        if like(robotbody.get_head_position()[0],0):
+            return "facing the goal"
+        
+    def exit(self):
+        print("ending the turn")
+        
+class GoToLine:
+    
+    def __init__(self,timer=-1):
+        
+        self.timer=timer
+        
+    def entry(self):
+        self.timer+=time.time()
+        walk.set_velocity(0.1, 0, 0)
+        print("walking towards the line")
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        
+        if self.timer<time.time():
+            
+            if vision.has_new_line_observation() and self.get_pitch_angle()<=pi/3:
+                walk.set_velocity(0, 0, 0)
+                return "standing on line"
+            
+    def exit(self):
+        print ("stopped")
+        
+
+class CheckIfStandingInGoal:
+    
+    def entry(self):
+        self.wanted_head_position=[-pi/2,0]
+        robotbody.set_head_position_list(self.wanted_head_position)
+        print("Test if standing in the goal")
+        
+    def update(self):
+        
+        if has_fallen():
+            return "fallen"
+        
+        if vision.has_new_goal_observation():
+            
+            if like(goal_angle()[0],0):
+                return "done"
+            else:
+                return "standing in front of goal"
+        
+        self.current_head_position=robotbody.get_head_position()
+        
+        if like(self.current_head_position,pi/2):
+            return "can't find the goal"
+        
+        if like(self.wanted_head_position,self.current_head_position):
+            self.update_head_position()
+    
+    def exit(self):
+        print("test finished")
+        
+    def update_head_position(self):
+        self.wanted_head_position[0]+=pi/15
+        robotbody.set_head_position_list(self.wanted_head_position)
+        
+        
 #State for guarding the goal while standing on the goal line
 class Guarding:
     
@@ -88,6 +167,7 @@ class Guarding:
         angles=ball_angle()
         robotbody.set_head_position(angles[0],angles[1])
 
+
 #State for finding the ball while standing on the goal line
 class BallTracking:
     
@@ -126,16 +206,7 @@ class BallTracking:
                 self.wanted_head_position[0]=head_position[0]+pi/15
             
             robotbody.set_head_position(self.wanted_head_position[0],self.wanted_head_position[1])
-        
-#State for going to the middle of the goal and face the opponents
-class GoToTheGoal:
-    
-    def entry (self):
-        pass
-    def update (self):
-        pass
-    def exit (self):
-        pass
+      
 
 #State for making the robot stand up
 class GetUp:
@@ -149,3 +220,97 @@ class GetUp:
     
     def exit (self):
         print("sitting")
+
+
+"""
+Sets the head position to face the middle of the goal if it can find two pillars within 180 degrees.
+Sets the head position to one of the pillar if it can only find one.
+Otherwise calls it a fail.
+"""
+
+class FindMiddleOfGoal:
+    
+    """FSM methods"""
+    
+    def entry(self):
+        robotbody.set_head_hardness(1.95)
+        self.current_head_position=robotbody.get_head_position()
+        
+        self.wanted_head_position=[-pi/2,0]
+        robotbody.set_head_position_list(self.wanted_head_position)
+           
+        self.ending=False
+        
+        self.numbers_of_observation=0
+        self.angles=[]
+        
+        print ("searching for goal")
+        
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        
+        self.current_head_position=robotbody.get_head_position()
+        
+        if like(self.wanted_head_position,self.current_head_position):
+
+            if self.ending:
+                return "focus_one"
+            
+            elif len(self.angles)==0:
+                if vision.has_new_goal_observation():
+                    self.get_goal_observation()
+                    self.searching_for_next()
+                    
+                elif like(self.current_head_position[0],pi/2):
+                    return "fail"
+                
+                else:
+                    self.set_next_head_position()
+            
+            elif len(self.angles)==1:
+                if vision.has_new_goal_observation():
+                    self.get_goal_observation()
+                    self.focus_middle()
+                    
+                else:
+                    self.set_next_head_position()
+            
+            else:
+                return "focus_middle"
+
+    
+    def exit(self):
+        pass
+    
+    
+    """Methods used by the update method"""
+    def get_goal_observation(self):
+        
+        temp_angles=goal_angle()
+        
+        if len(self.angles)==0 or not like(temp_angles,self.angles[0]):
+            self.angles.append(temp_angles)
+        
+        else:
+            self.focus_one()
+            self.ending=True
+        
+    def searching_for_next(self):
+        self.wanted_head_position=[pi/2,0]
+        robotbody.set_head_position_list(self.wanted_head_position)
+               
+    def focus_middle(self):
+        self.wanted_head_position=[(self.angles[0][0]+self.angles[1][0])/2,0]
+        robotbody.set_head_position_list(self.wanted_head_position)    
+            
+    def focus_one(self):
+        self.wanted_head_position=[self.angles[0]]
+        robotbody.set_head_position_list(self.wanted_head_position)
+        
+    def set_next_head_position(self):
+        if len(self.angles)==0:
+            self.wanted_head_position[0]+=pi/15
+        else:
+            self.wanted_head_position[0]-=pi/15
+        robotbody.set_head_position_list(self.wanted_head_position)
