@@ -7,6 +7,67 @@ from math import pi
 from help_functions import has_fallen, ball_angle, like, goal_angle
 import time
 
+
+class TurnGyro:
+    """The robot turn a certain angle"""
+
+    def __init__(self,angle):
+        self.angle = angle
+        self.number_of_turns = 0
+    def entry(self):
+        print("Entry gyro turn")
+        self.start_angle = imu.get_angle()[2]
+        self.number_of_turns += 1
+        walk.turn_left(0.4)
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        if imu.get_angle()[2] > self.start_angle + self.angle:
+            return "done"
+    def exit(self):
+        walk.turn_left(0)
+        print("Exit gyro turn")
+        
+        
+class StandStill:
+    """The robot stands still and wait"""
+
+    def __init__(self,timer=1):
+        self.time = timer # 15 for webots
+    def entry(self):
+        print("Entry still")
+        motion.stand_still()
+        self.start_time = time.time()
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        elif time.time() > self.start_time + self.time:
+            return "timeout"
+    def exit(self):
+        print("Exit still")
+        motion.start_walk()
+        
+        
+class WalkSpeed:
+    """The robot walks forward some time"""
+
+    def __init__(self, time, speed = 0.02):
+        self.time = time
+        self.speed = speed
+    def entry(self):
+        print("See the robot walk")
+        self.start_time = time.time()
+
+        walk.walk_forward(self.speed)
+
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        if time.time() > self.start_time + self.time:
+            return "timeout"
+    def exit(self):
+        print("Exit walk")
+
 class FaceMiddleOfGoal:
     
 
@@ -22,7 +83,7 @@ class FaceMiddleOfGoal:
             return "fallen"
         
         if like(robotbody.get_head_position()[0],0):
-            return "facing the goal"
+            return "done"
         
     def exit(self):
         print("ending the turn")
@@ -68,7 +129,7 @@ class CheckIfStandingInGoal:
             if like(goal_angle()[0],0):
                 return "done"
             else:
-                return "standing in front of goal"
+                return "standing in front of the goal"
         
         self.current_head_position=robotbody.get_head_position()
         
@@ -196,7 +257,7 @@ class BallTracking:
         
         head_position=robotbody.get_head_position()
         if like(head_position,self.wanted_head_position):
-            if like(head_position[0],pi/2) and like(head_position[1],0):
+            if like(head_position,[pi/2,0]):
                 self.wanted_head_position=[-pi/2,pi/3.5]
         
             elif like(head_position[0],pi/2):
@@ -255,7 +316,7 @@ class FindMiddleOfGoal:
         if like(self.wanted_head_position,self.current_head_position):
 
             if self.ending:
-                return "focus_one"
+                return "focus one"
             
             elif len(self.angles)==0:
                 if vision.has_new_goal_observation():
@@ -277,7 +338,7 @@ class FindMiddleOfGoal:
                     self.set_next_head_position()
             
             else:
-                return "focus_middle"
+                return "focus middle"
 
     
     def exit(self):
