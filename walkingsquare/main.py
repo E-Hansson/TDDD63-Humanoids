@@ -1,9 +1,17 @@
-from erik_test_state_machine import Program
 from Robot.Interface import robotbody
 from Robot.Interface.Sensors import vision
 from Robot.Actions import motion
+from Robot.Util import robotid
 import time
 #import urllib2
+
+#Imports the right statemachine depending on the number
+
+if robotid.get_player_number() in (1,2,3):
+    from state_machine import Program
+
+else:
+    from goal_keeper import Program
 
 # Instantiate the program class
 _program = Program()
