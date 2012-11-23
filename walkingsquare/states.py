@@ -89,10 +89,11 @@ class DemoCircleBall:
 
 class CircleBall:
     
-    def __init__(self,intervall,head_start,head_end):
+    def __init__(self,intervall,head_start,head_end,circle_direction):
         self.rotation_intervall = intervall
         self.head_start = head_start
         self.head_end = head_end
+        self.circle_direction = circle_direction
     
     def entry(self):
         print("Circle this motherfucker!")
@@ -100,6 +101,8 @@ class CircleBall:
         
         #angles=ball_angle()
         walk.set_velocity(0, 0, 0)
+        self.forward_velocity = 0;
+        self.const_forward_velocity = 0.04;
         #robotbody.set_head_position(angles[0],angles[1])
         self.wanted_rotation = pi/2
         self.rotation_progress = 0
@@ -109,7 +112,6 @@ class CircleBall:
         self.head_ball = [0, pi/3]
         self.wanted_head_position = [self.head_start[0],self.head_start[1]]
         self.looking_for_goal = True
-        self.found_goal = False
         robotbody.set_head_position_list(self.head_start)
         
     def update(self):
@@ -118,32 +120,39 @@ class CircleBall:
         if has_fallen():
             return "fallen"
         
+        '''
         if self.found_goal:
             if like(self.head_position,self.wanted_head_position,0.01):
                 print("Lined up!")
                 return "lined up"
-        
-        elif(self.looking_for_goal):
+        '''
+        if(self.looking_for_goal):
 
             if vision.has_new_goal_observation():
-                if like(goal_angle()[0],0,1) and like(self.head_position[0],0):
-                    self.wanted_head_position = ball_angle()
-                    robotbody.set_head_position_list(self.wanted_head_position)
-                    self.found_goal = True
+                if goal_angle()[0] < 0:
+                    self.adjust_direction = "left"
                 else:
-                    print("Adjusting...")
-                    return "needs adjusting"
+                    self.adjust_direction = "right"
+                    
+                self.wanted_head_position = ball_angle()
+                robotbody.set_head_position_list(self.wanted_head_position)
+                print("Adjusting " + self.adjust_direction)
+                return "adjust " + self.adjust_direction
             self.update_head_position()
             
         else:
             angles=ball_angle()
             robotbody.set_head_position_list(angles)
             head_position = robotbody.get_head_position()
+            if head_position[0] > pi/3.2:
+                self.forward_velocity = self.const_forward_velocity;
+            else:
+                self.forward_velocity = 0
         
-            walk.set_velocity(0, 0.4, head_position[0]*1.2)
+            walk.set_velocity(self.forward_velocity, 0.4*self.circle_direction, head_position[0]*1.2)
             self.rotation_progress -= head_position[0]/7.3
         
-            if like(self.rotation_progress,self.rotation_intervall):
+            if like(fabs(self.rotation_progress),self.rotation_intervall):
                 self.init_goal_check()
         
     def exit(self):
