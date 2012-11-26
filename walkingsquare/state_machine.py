@@ -22,10 +22,10 @@ class Program(general_fsm.StateMachine):
         
         """ ball interaction states"""
         _follow_ball = states.FollowBall()
-        _circle_ball_left = states.CircleBall(math.pi/2,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],1)
-        _circle_ball_right = states.CircleBall(math.pi/2,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],-1)
-        _adjust_aim_left = states.CircleBall(math.pi/8,[0,-math.pi/8],[0,-math.pi/8],1)
-        _adjust_aim_right = states.CircleBall(math.pi/8,[0,-math.pi/8],[0,-math.pi/8],-1)
+        _circle_ball_left = states.CircleBall(math.pi/3,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],1)
+        _circle_ball_right = states.CircleBall(math.pi/3,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],-1)
+        _adjust_aim_left = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1)
+        _adjust_aim_right = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1)
         _track_ball = states.TrackBall()
         _re_find_ball = states.TrackBall()
         _stand_in_front_of_ball = states.FollowBall(math.pi/3.1)
@@ -34,6 +34,7 @@ class Program(general_fsm.StateMachine):
         """ goal interaction states"""
         _track_goal = states.TrackGoal(_circle_ball_left)
         _center_goal = states.FindMiddleOfGoal()
+        _line_up_shot = states.LineUpShot();
         
         """ misc states """
         _set_eye_color_blue = states.SetEyeColor(0,0,31)
@@ -76,6 +77,7 @@ class Program(general_fsm.StateMachine):
         """goal interaction states"""
         self.add_state(_track_goal)
         self.add_state(_center_goal)
+        self.add_state(_line_up_shot)
         
         """ misc stats """
         self.add_state(_set_eye_color_blue)
@@ -94,14 +96,19 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_stand_still,"timeout",_initiate_walking)
         self.add_transition(_initiate_walking, "timeout", _track_ball)
         self.add_transition(_follow_ball, "done", _circle_ball_left)
+        
         self.add_transition(_circle_ball_left, "adjust left", _adjust_aim_left)
         self.add_transition(_circle_ball_left, "adjust right", _adjust_aim_right)
         self.add_transition(_adjust_aim_left, "adjust left", _adjust_aim_left)
-        self.add_transition(_adjust_aim_left, "adjust right", _adjust_aim_right)
-        self.add_transition(_adjust_aim_right, "adjust left", _adjust_aim_left)
         self.add_transition(_adjust_aim_right, "adjust right", _adjust_aim_right)
-        self.add_transition(_adjust_aim_left, "lined up", _stand_in_front_of_ball)
-        self.add_transition(_adjust_aim_right, "lined up", _stand_in_front_of_ball)
+        self.add_transition(_adjust_aim_left, "adjust right", _center_goal)
+        self.add_transition(_adjust_aim_right, "adjust left", _center_goal)
+        
+        self.add_transition(_center_goal, "fail", _center_goal)
+        self.add_transition(_center_goal, "focus middle", _line_up_shot)
+        
+        self.add_transition(_line_up_shot, "lined up", _stand_in_front_of_ball)
+        
         self.add_transition(_stand_in_front_of_ball, "done", _kick_ball)
         self.add_transition(_kick_ball, "done", _track_ball)
         self.add_transition(_walk_straight, "timeout", _track_ball)
