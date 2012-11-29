@@ -89,10 +89,11 @@ class DemoCircleBall:
 
 class CircleBall:
     
-    def __init__(self,intervall,head_start,head_end):
+    def __init__(self,intervall,head_start,head_end,circle_direction):
         self.rotation_intervall = intervall
         self.head_start = head_start
         self.head_end = head_end
+        self.circle_direction = circle_direction
     
     def entry(self):
         print("Circle this motherfucker!")
@@ -100,6 +101,8 @@ class CircleBall:
         
         #angles=ball_angle()
         walk.set_velocity(0, 0, 0)
+        self.forward_velocity = 0;
+        self.const_forward_velocity = 0.1;
         #robotbody.set_head_position(angles[0],angles[1])
         self.wanted_rotation = pi/2
         self.rotation_progress = 0
@@ -109,7 +112,6 @@ class CircleBall:
         self.head_ball = [0, pi/3]
         self.wanted_head_position = [self.head_start[0],self.head_start[1]]
         self.looking_for_goal = True
-        self.found_goal = False
         robotbody.set_head_position_list(self.head_start)
         
     def update(self):
@@ -118,32 +120,35 @@ class CircleBall:
         if has_fallen():
             return "fallen"
         
-        if self.found_goal:
-            if like(self.head_position,self.wanted_head_position,0.01):
-                print("Lined up!")
-                return "lined up"
+        print("Looking for goal: ",self.looking_for_goal)
         
-        elif(self.looking_for_goal):
-
+        if(self.looking_for_goal):
             if vision.has_new_goal_observation():
-                if like(goal_angle()[0],0,1) and like(self.head_position[0],0):
-                    self.wanted_head_position = ball_angle()
-                    robotbody.set_head_position_list(self.wanted_head_position)
-                    self.found_goal = True
+                if goal_angle()[0] < 0:
+                    self.adjust_direction = "left"
                 else:
-                    print("Adjusting...")
-                    return "needs adjusting"
+                    self.adjust_direction = "right"
+                    
+                self.wanted_head_position = ball_angle()
+                robotbody.set_head_position_list(self.wanted_head_position)
+                print("Adjust " + self.adjust_direction)
+                return "adjust " + self.adjust_direction
+                
             self.update_head_position()
             
         else:
             angles=ball_angle()
             robotbody.set_head_position_list(angles)
             head_position = robotbody.get_head_position()
+            if head_position[0] > pi/3.2:
+                self.forward_velocity = self.const_forward_velocity;
+            else:
+                self.forward_velocity = 0
         
-            walk.set_velocity(0, 0.4, head_position[0]*1.2)
+            walk.set_velocity(self.forward_velocity, 0.4*self.circle_direction, head_position[0]*1.2)
             self.rotation_progress -= head_position[0]/7.3
         
-            if like(self.rotation_progress,self.rotation_intervall):
+            if like(fabs(self.rotation_progress),self.rotation_intervall):
                 self.init_goal_check()
         
     def exit(self):
@@ -211,7 +216,7 @@ class FollowBall:
             return "fallen"
         
         if not vision.has_new_ball_observation():
-            if self.last_observation_of_ball+1<time.time() or self.last_distance>=tan(5*pi/12):
+            if self.last_observation_of_ball+5<time.time() or self.last_distance>=tan(5*pi/12):
                 walk.set_velocity(self.speed, 0, 0)
                 return "no ball"
         
@@ -337,7 +342,28 @@ class WalkSpeed:
 
 """        Direction states        """
 
+class LineUpShot:
+    def entry(self):
+        print("lining up...")
+        robotbody.set_body_hardness(1.95)
+        self.ball_position = [0,pi/3.8]
+        self.current_head_position=robotbody.get_head_position()
+        
+    def update(self):
+        
+        self.current_head_position = robotbody.get_head_position()
+        if like(self.current_head_position[0],0,1):
+            robotbody.set_head_position_list(self.ball_position)
+            if like(self.current_head_position[1],self.ball_position[1]):
+                print("lined up!")
+                return "lined up"
+        
+    def exit(self):
+        pass
+
+
 """
+
 Sets the head position to face the middle of the goal if it can find two pillars within 180 degrees.
 Sets the head position to one of the pillar if it can only find one.
 Otherwise calls it a fail.
@@ -351,7 +377,7 @@ class FindMiddleOfGoal:
         robotbody.set_head_hardness(1.95)
         self.current_head_position=robotbody.get_head_position()
         
-        self.wanted_head_position=[-pi/2,0]
+        self.wanted_head_position=[-pi/2,-pi/16]
         robotbody.set_head_position_list(self.wanted_head_position)
            
         self.ending=False
@@ -376,23 +402,29 @@ class FindMiddleOfGoal:
                 if vision.has_new_goal_observation():
                     self.get_goal_observation()
                     self.searching_for_next()
+                    print("got first observation")
                     
                 elif like(self.current_head_position[0],pi/2):
+                    print("fail")
                     return "fail"
                 
                 else:
                     self.set_next_head_position()
+                    print("moving head")
             
             elif len(self.angles)==1:
                 if vision.has_new_goal_observation():
                     self.get_goal_observation()
                     self.focus_middle()
+                    print("got second observation")
                     
                 else:
                     self.set_next_head_position()
+                    print("moving head 2")
             
             else:
-                return "focus_middle"
+                print("focus middle")
+                return "focus middle"
 
     
     def exit(self):
@@ -412,7 +444,7 @@ class FindMiddleOfGoal:
             self.ending=True
         
     def searching_for_next(self):
-        self.wanted_head_position=[pi/2,0]
+        self.wanted_head_position=[pi/2,-pi/16]
         robotbody.set_head_position_list(self.wanted_head_position)
                
     def focus_middle(self):
