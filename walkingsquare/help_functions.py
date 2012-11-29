@@ -1,8 +1,10 @@
-# Some helpfunctions for the robot
+# Some help functions for the robot
 
 from math import fabs,pi,tan
 from Robot.Interface import robotbody
 from Robot.Interface.Sensors import imu,vision
+from Robot.Actions import walk
+from Robot.Util import robotid
 
 
 """        Written by Erik            """
@@ -11,7 +13,15 @@ from Robot.Interface.Sensors import imu,vision
 #Uses a walking robot as 1 unit length
 def distance_to_ball():
     
-    return tan(pi/2-robotbody.get_head_position()[1])
+    return tan(pi/2-ball_angle()[1])
+
+# Returns the angles to the goal in relation to imu
+def goal_angle():
+    
+    last_goal = vision.get_goal()
+    goal = vision.Goal(last_goal.x,last_goal.y,last_goal.z,last_goal.t,robotid.get_team_number())
+    angles=goal.get_angle()
+    return angles
 
 
 # Returns the angles to the ball in relation to imu

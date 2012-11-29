@@ -26,7 +26,7 @@ _tDelay = 0.005
 def update():
     _program.update()
     motion.update()
-    robotbody.update()
+    #robotbody.update()
     vision.update()
     #opener = urllib2.build_opener()
     #opener.addheaders = [('User-agent', 'Bawlinator')]
