@@ -7,6 +7,10 @@ from Robot.Actions import walk
 from Robot.Util import robotid
 
 
+"""        Written by Erik            """
+
+#Returns the distance to the ball
+#Uses a walking robot as 1 unit length
 def distance_to_ball():
     
     return tan(pi/2-robotbody.get_head_position()[1])
@@ -18,6 +22,7 @@ def goal_angle():
     goal = vision.Goal(last_goal.x,last_goal.y,last_goal.z,last_goal.t,robotid.get_team_number())
     angles=goal.get_angle()
     return angles
+
 
 # Returns the angles to the ball in relation to imu
 def ball_angle():
