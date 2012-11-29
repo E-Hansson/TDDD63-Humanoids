@@ -1,0 +1,13 @@
+Gustaf: most of the ball circling and the "crude" goalfinding,
+kicking the ball,
+general bug fixing concering the forward
+
+
+Arvin: The drafts for comunication between the robots,
+changing code from only webot to darwin,
+general bug fixing concerning the forward 
+
+
+Erik: the "fine" tuned goalfinding, ball tracking, following ball,
+the not completed goal keeper, changing code from only webot to darwin,
+kicking the ball, bug fixing
