@@ -1,6 +1,7 @@
 from Robot.Interface.Sensors import imu, vision
 from Robot.Interface import robotbody
 from Robot.Actions import motion, walk, kick
+from Robot.Util import robotid
 from help_functions import *
 from math import pi, fabs, tan
 
@@ -8,86 +9,53 @@ import time
 
 """        General motion states        """
 
-class DemoCircleBall:
-    
-    def __init__(self,intervall,head_start,head_end):
-        self.rotation_intervall = intervall
-        self.head_start = head_start
-        self.head_end = head_end
+
+class CircleBall:
     
     def entry(self):
-        print("Circle this motherfucker!")
-        robotbody.set_head_hardness(0.95)
-        
-        angles=ball_angle()
+        self.wanted_rotation=pi
         walk.set_velocity(0, 0, 0)
-        #robotbody.set_head_position(angles[0],angles[1])
-        self.wanted_rotation = pi/2
         self.rotation_progress = 0
-        self.time = 2
-          
-        self.head_position = robotbody.get_head_position()
-        self.head_ball = [0, pi/3]
-        self.wanted_head_position = [self.head_start[0],self.head_start[1]]
-        self.looking_for_goal = False
-        #robotbody.set_head_position(self.head_start[0], self.head_start[1])
+        self.const_forward_velocity=0.02
+        self.forward_velocity=0
         
-    def set_wanted_rotation(self, rotation_intervall):
-        self.rotation_intervall = rotation_intervall
-        
-    def init_goal_check(self):
-            self.looking_for_goal = True
-            self.rotation_progress = 0
-            walk.set_velocity(0, 0, 0)
-            robotbody.set_head_position_list(self.head_start)
-            self.wanted_head_position = list(self.head_start)
-            self.start_time = time.time()
-                    
-    def check_for_goal(self):
-        if self.wanted_head_position[0] > -pi/2:
-            self.wanted_head_position[0] -= pi/16
-        if like(self.head_position[0],self.head_end[0]):
-            if time.time()>self.time+self.start_time:
-                self.looking_for_goal = False
-                self.wanted_head_position = self.head_ball
-        else:
-            self.start_time = time.time()
-
-        robotbody.set_head_position(self.wanted_head_position[0], self.wanted_head_position[1])
+        self.wanted_head_position=[0,pi/5]
+        robotbody.set_head_position_list(self.wanted_head_position)
         
     def update(self):
-        self.head_position = robotbody.get_head_position()
         
         if has_fallen():
             return "fallen"
-        """  
-        if(self.looking_for_goal):
-            self.check_for_goal()
-            if vision.has_new_goal_observation():
-                if like(goal_angle()[0],0,1) and like(self.head_position[0],0):
-                    robotbody.set_head_position(self.head_ball[0],self.head_ball[1])
-                    print("Lined up!")
-                    return "lined up"
-                else:
-                    print("Adjusting...")
-                    return "needs adjusting"
+        
+        self.set_new_head_position()
+        if distance_to_ball() > pi/3.8:
+            self.forward_velocity = self.const_forward_velocity;
         else:
-            """
-        angles=ball_angle()
-        robotbody.set_head_position(angles[0],angles[1])
-        head_position = robotbody.get_head_position()
+            self.forward_velocity = 0
         
-        walk.set_velocity(0, 0.4, head_position[0]*1.2)
-        self.rotation_progress -= head_position[0]/7.3
+        walk.set_velocity(self.forward_velocity, 0.4, self.wanted_head_position[0]*1.2)
+        self.rotation_progress -= self.wanted_head_position[0]/12
         
-        if like(self.rotation_progress,self.rotation_intervall):
+        if like(fabs(self.rotation_progress),self.wanted_rotation):
+            print("aiming away from our goal")
             return "done"
         
     def exit(self):
-        print("Rotation done")
-
-
-class CircleBall:
+        pass
+        
+        
+    def set_new_head_position(self):
+        if like(self.wanted_head_position,robotbody.get_head_position()):
+            current_ball_angle=ball_angle()
+            if current_ball_angle[1]>pi/4.5:
+                self.wanted_head_position[1]=pi/4.5
+            else:
+                self.wanted_head_position[1]=current_ball_angle[1]
+        
+            self.wanted_head_position[0]=current_ball_angle[0]
+            robotbody.set_head_position_list(self.wanted_head_position)
+        
+class CrudeGoalAdjusting:
     
     def __init__(self,intervall,head_start,head_end,circle_direction,start_with_turn=False):
         self.rotation_intervall = intervall
@@ -100,17 +68,14 @@ class CircleBall:
         print("Circle this motherfucker!")
         robotbody.set_head_hardness(0.95)
         
-        #angles=ball_angle()
         walk.set_velocity(0, 0, 0)
         self.forward_velocity = 0
         self.const_forward_velocity = 0.02
-        #robotbody.set_head_position(angles[0],angles[1])
         self.wanted_rotation = pi/2
         self.rotation_progress = 0
         self.time = 2
           
-        #self.head_position = robotbody.get_head_position()
-        self.head_ball = [0, pi/5]
+        self.head_ball = [0, pi/4.5]
         self.wanted_head_position = list(self.head_start)
         self.looking_for_goal = not self.start_with_turn
         robotbody.set_head_position_list(self.head_start)
@@ -184,8 +149,8 @@ class CircleBall:
         
     def set_new_head_position(self):
         current_ball_angle=ball_angle()
-        if current_ball_angle[1]>pi/5:
-            self.wanted_head_position[1]=pi/5
+        if current_ball_angle[1]>pi/4.5:
+            self.wanted_head_position[1]=pi/4.5
         else:
             self.wanted_head_position[1]=current_ball_angle[1]
         
@@ -197,8 +162,9 @@ class KickBall:
     
     def entry(self):
         print ("kicking the ball")
-        self.time=5
-        self.ball_angle=ball_angle()[0]
+        self.time=6
+        self.wanted_head_position=[0,pi/4.5]
+        robotbody.set_head_position_list(self.wanted_head_position)
         self.start_time=False
         
     def update(self):
@@ -206,11 +172,19 @@ class KickBall:
             return "fallen"
         
         if not self.start_time:
-            self.start_time = time.time()
-            if self.ball_angle<0:
-                kick.forward_left()
-            else:
-                kick.forward_right()
+            if like(self.wanted_head_position,robotbody.get_head_position()):
+                self.ball_angle=ball_angle()[0]
+
+                if like(self.ball_angle,0):
+                    walk.set_velocity(0, 0.4, 0)
+                else:
+                    walk.set_velocity(0, 0, 0)
+                    robotbody.set_head_position_list([0,0])
+                    self.start_time = time.time()
+                    if self.ball_angle>0:
+                        kick.forward_left()
+                    else:
+                        kick.forward_right()
         
         if self.start_time and time.time()>self.time+self.start_time:
             return "done"
@@ -219,22 +193,49 @@ class KickBall:
     def exit(self):
         print ("kicked the ball")
     
+
+class FaceBall:
     
+    def entry(self):
+        print("facing the ball")
+        self.last_ball_angle=ball_angle()[0]
+        
+        if self.last_ball_angle<0:
+            walk.set_velocity(0, -0.4, self.last_ball_angle)
+        else:
+            walk.set_velocity(0, 0.4, self.last_ball_angle)
+    
+    def update(self):
+        if has_fallen():
+            return "fallen"
+        if like(ball_angle()[0],0):
+            return "done"
+        
+    def exit(self):
+        print("standing in front of ball")
+        
+
 #A class which follows the ball and stops when the angle of the head is close enough
 class FollowBall:
     
-    def __init__(self,distance=pi/4):
+    def __init__(self,distance=pi/4,look_down=False):
         self.distance=distance
         self.speed=0.02
         self.last_distance=1000
+        self.look_down=look_down
         
     #FSM methods
     def entry(self):
         print("following the ball")
         robotbody.set_head_hardness(0.95)
         self.last_observation_of_ball=-1
-        self.wanted_head_position=robotbody.get_head_position()
-    
+        if self.look_down:
+            self.wanted_head_position=[0,pi/4.5]
+        else:
+            self.wanted_head_position=robotbody.get_head_position()
+        
+        robotbody.set_head_position_list(self.wanted_head_position)
+        
     def update(self):
         if has_fallen():
             return "fallen"
@@ -243,16 +244,18 @@ class FollowBall:
             if self.last_observation_of_ball+5<time.time() or self.last_distance>=tan(5*pi/12):
                 walk.set_velocity(self.speed, 0, 0)
                 robotbody.set_eyes_led(31, 0, 0)
+                print("lost ball")
                 return "no ball"
-            
-        self.current_head_position = robotbody.get_head_position()
-        if like(self.current_head_position,self.wanted_head_position):
-            self.update_head_position()
+        else:
+            self.current_head_position = robotbody.get_head_position()
+            if like(self.current_head_position,self.wanted_head_position):
+                self.update_head_position()
            
             self.last_observation_of_ball=time.time()
             self.last_distance=distance_to_ball()
             
-            if like(distance_to_ball(),self.distance):
+            if self.last_distance>0 and self.last_distance<self.distance:
+                print ("standing in front of ball")
                 return "done"
                 
             if not like(self.current_head_position[0],0,pi/18):
@@ -263,7 +266,7 @@ class FollowBall:
         
             
     def exit(self):
-        print ("standing in front of ball")
+        pass
     
     #Methods used by the FSM
     def update_head_position(self):
@@ -275,8 +278,8 @@ class FollowBall:
         else:
             self.wanted_head_position[0]=angles[0]
         
-        if angles[1]>pi/5:
-            self.wanted_head_position[1]=pi/5
+        if angles[1]>pi/4.5:
+            self.wanted_head_position[1]=pi/4.5
         else:
             self.wanted_head_position[1]=angles[1]
             
@@ -379,24 +382,118 @@ class WalkSpeed:
 
 """        Direction states        """
 
-class LineUpShot:
+class CheckTeam:
+    
     def entry(self):
-        print("lining up...")
-        robotbody.set_body_hardness(1.95)
-        self.ball_position = [0,pi/3.8]
-        self.current_head_position=robotbody.get_head_position()
+        print ("checking which goal")
+        self.wanted_head_position=[0,0]
+        robotbody.set_head_position_list(self.wanted_head_position)
+        self.team_id=robotid.get_team_number()
+        self.first_turn=True
         
     def update(self):
         
-        self.current_head_position = robotbody.get_head_position()
-        if like(self.current_head_position[0],0,1):
-            robotbody.set_head_position_list(self.ball_position)
-            if like(self.current_head_position[1],self.ball_position[1]):
-                print("lined up!")
-                return "lined up"
+        if has_fallen():
+            return "fallen"
+        
+        if vision.has_new_goal_observation():
+            if self.opponents_goal():
+                print("fire at opponents goal")
+                return "fire"
+            else:
+                print ("turning towards opponents goal")
+                return "turn"
+        
+        self.current_head_position=robotbody.get_head_position()[0]
+        self.update_head_position()
+        
+        if like(self.current_head_position,pi/3):
+            return "fire"
         
     def exit(self):
         pass
+    
+    def opponents_goal(self):
+        goal_team_number = vision.get_goal().team
+        return not self.team_id==goal_team_number
+    
+    def update_head_position(self):
+        if like(self.wanted_head_position[0],self.current_head_position):
+            if like(self.current_head_position,-pi/3):
+                self.wanted_head_position[0]=pi/18
+                self.first_turn=False
+            elif self.first_turn:
+                self.wanted_head_position[0]-=pi/18
+            else:
+                self.wanted_head_position[0]+=pi/18
+            
+            robotbody.set_head_position_list(self.wanted_head_position)
+        
+            
+class LineUpShot:
+    
+    def entry(self):
+        print("lining up...")
+        robotbody.set_body_hardness(0.95)
+        self.goal_angle=robotbody.get_head_position()[0]
+        self.wanted_head_position=[self.goal_angle,pi/4.5]
+        robotbody.set_head_position_list(self.wanted_head_position)
+        self.timer=0
+        self.lost_ball_timer=None
+        self.first_ball_angle=None
+        self.last_ball_angle=None
+        
+    def update(self):
+        self.current_head_position=robotbody.get_head_position()
+        
+        if has_fallen():
+            return "fallen"
+        
+        if like(self.current_head_position,self.wanted_head_position):
+            
+            if self.timer and time.time()>self.timer:
+                return "check again"
+            else:
+                if vision.has_new_ball_observation():
+                    self.lost_ball_timer=time.time()+5
+            
+                elif self.lost_ball_timer and self.lost_ball_timer<time.time():
+                    return "lost ball"
+                
+                if not self.first_ball_angle:
+                    self.first_ball_angle=ball_angle()[0]
+                    self.last_ball_angle=self.first_ball_angle
+                    self.timer=time.time()+fabs(self.first_ball_angle)*10
+                    
+                else:
+                    self.update_head_position()
+                    
+                if like(self.last_ball_angle,self.goal_angle,pi/9):
+                    walk.set_velocity(0, 0, 0)
+                    print ("lined up")
+                    return "lined up"
+            
+                if self.first_ball_angle<0:
+                    walk.set_velocity(0, -0.4, self.last_ball_angle)
+                else:
+                    walk.set_velocity(0, 0.4, self.last_ball_angle)
+        
+    def exit(self):
+        pass
+
+    def update_head_position(self):
+        temp_ball_angles=ball_angle()
+        
+        if temp_ball_angles[1]>pi/4.5:
+            temp_ball_angles[1]=pi/4.5
+        
+        if temp_ball_angles[0]>pi/3:
+            temp_ball_angles[0]=pi/3
+        elif temp_ball_angles[0]<-pi/3:
+            temp_ball_angles[0]=-pi/3
+        
+        self.last_ball_angle=temp_ball_angles[0]
+        robotbody.set_head_position_list(temp_ball_angles)
 
 
 """
@@ -565,7 +662,7 @@ class TrackBall:
         head_position=robotbody.get_head_position()
         if like(head_position,self.wanted_head_position,0.2):
             if like(head_position,[pi/3,0]):
-                self.wanted_head_position=[-pi/3,pi/5]
+                self.wanted_head_position=[-pi/3,pi/4.5]
         
             elif like(head_position[0],pi/3):
                 self.wanted_head_position=[-pi/3,0]

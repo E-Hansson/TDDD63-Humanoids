@@ -14,6 +14,9 @@ class Program(general_fsm.StateMachine):
         _initiate_walking = states.WalkSpeed(3,0)
         _walk_on_spot = states.WalkSpeed(0.02,0)
         _start_walking = states.StartWalk(0.02)
+        _one_step_forward_force_kick = states.FollowBall(math.pi/4.5,True)
+        _one_step_forward = states.FollowBall(math.pi/4.5,True)
+        
                 
         """ arm states """
         _lift_right_arm = states.MoveArm("right", relation="ground")
@@ -22,19 +25,22 @@ class Program(general_fsm.StateMachine):
         
         """ ball interaction states"""
         _follow_ball = states.FollowBall()
-        _circle_ball_left = states.CircleBall(math.pi/3,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],1)
-        _circle_ball_right = states.CircleBall(math.pi/3,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],-1)
-        _adjust_aim_left = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1,True)
-        _adjust_aim_right = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1,True)
+        _circle_ball_left = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],1)
+        _circle_ball_right = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],-1)
+        _adjust_aim_left = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1,True)
+        _adjust_aim_right = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1,True)
         _track_ball = states.TrackBall()
         _re_find_ball = states.TrackBall()
-        _stand_in_front_of_ball = states.FollowBall(math.pi/3.5)
+        _stand_in_front_of_ball = states.FaceBall()
         _kick_ball = states.KickBall()
+        _circle_away_from_own_goal = states.CircleBall()
+        _stand_in_front_of_ball_force_kick = states.FaceBall()
         
         """ goal interaction states"""
         _track_goal = states.TrackGoal(_circle_ball_left)
         _center_goal = states.FindMiddleOfGoal()
-        _line_up_shot = states.LineUpShot();
+        _line_up_shot = states.LineUpShot()
+        _check_team_goal = states.CheckTeam()
         
         """ misc states """
         _set_eye_color_blue = states.SetEyeColor(0,0,31)
@@ -57,6 +63,8 @@ class Program(general_fsm.StateMachine):
         self.add_state(_initiate_walking)
         self.add_state(_walk_on_spot)
         self.add_state(_start_walking)
+        self.add_state(_one_step_forward)
+        self.add_state(_one_step_forward_force_kick)
         
         """ arm states """
         self.add_state(_lift_right_arm)
@@ -73,11 +81,15 @@ class Program(general_fsm.StateMachine):
         self.add_state(_kick_ball)
         self.add_state(_stand_in_front_of_ball)
         self.add_state(_re_find_ball)
+        self.add_state(_circle_away_from_own_goal)
+        self.add_state(_stand_in_front_of_ball_force_kick)
         
         """goal interaction states"""
         self.add_state(_track_goal)
         self.add_state(_center_goal)
         self.add_state(_line_up_shot)
+        self.add_state(_check_team_goal)
+        
         
         """ misc stats """
         self.add_state(_set_eye_color_blue)
@@ -104,13 +116,21 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_adjust_aim_left, "adjust right", _center_goal)
         self.add_transition(_adjust_aim_right, "adjust left", _center_goal)
         
-        self.add_transition(_center_goal, "fail", _center_goal)
+        self.add_transition(_center_goal, "fail", _stand_in_front_of_ball)
         self.add_transition(_center_goal, "focus middle", _line_up_shot)
         self.add_transition(_center_goal, "focus one", _line_up_shot)
         
+        self.add_transition(_line_up_shot, "check again", _center_goal)
         self.add_transition(_line_up_shot, "lined up", _stand_in_front_of_ball)
         
-        self.add_transition(_stand_in_front_of_ball, "done", _kick_ball)
+        self.add_transition(_stand_in_front_of_ball, "done", _check_team_goal)
+        self.add_transition(_check_team_goal, "fire", _one_step_forward)
+        self.add_transition(_one_step_forward, "done", _kick_ball)
+        self.add_transition(_check_team_goal, "turn", _circle_away_from_own_goal)
+        self.add_transition(_circle_away_from_own_goal, "done", _stand_in_front_of_ball_force_kick)
+        self.add_transition(_stand_in_front_of_ball_force_kick, "done", _one_step_forward_force_kick)
+        self.add_transition(_one_step_forward_force_kick, "done", _kick_ball)
+        self.add_transition(_one_step_forward, "done", _kick_ball)
         self.add_transition(_kick_ball, "done", _track_ball)
         self.add_transition(_walk_straight, "timeout", _track_ball)
 
@@ -123,10 +143,17 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_stand_in_front_of_ball, "no ball", _track_ball)
         self.add_transition(_track_ball, "out of sight", _walk_straight)
         
+        self.add_transition(_line_up_shot, "lost ball", _track_ball)
+        self.add_transition(_one_step_forward, "no ball", _track_ball)
 
 
         """ error transitions """
+        self.add_transition(_circle_away_from_own_goal, "fallen", _get_up)
+        self.add_transition(_one_step_forward, "fallen", _get_up)
+        self.add_transition(_one_step_forward_force_kick, "fallen", _get_up)
+        self.add_transition(_check_team_goal, "fallen", _get_up)
         self.add_transition(_kick_ball, "fallen", _get_up)
+        self.add_transition(_line_up_shot, "fallen", _line_up_shot)
         self.add_transition(_track_goal, "fallen", _get_up)
         self.add_transition(_circle_ball_left, "fallen", _get_up)
         self.add_transition(_circle_ball_right, "fallen", _get_up)
