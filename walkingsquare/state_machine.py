@@ -9,11 +9,11 @@ class Program(general_fsm.StateMachine):
         
         """ movement states """
         _stand_still = states.StandStill()
-        _walk_straight = states.WalkSpeed(5, 1)
+        _walk_straight = states.WalkSpeed(5, 0.02)
         _turn_left_gyro = states.TurnGyro(math.pi/2-0.4) # Adjust for bias in the imu.
         _initiate_walking = states.WalkSpeed(3,0)
-        _walk_on_spot = states.WalkSpeed(0.2,0)
-        _start_walking = states.StartWalk(1)
+        _walk_on_spot = states.WalkSpeed(0.02,0)
+        _start_walking = states.StartWalk(0.02)
                 
         """ arm states """
         _lift_right_arm = states.MoveArm("right", relation="ground")
@@ -24,11 +24,11 @@ class Program(general_fsm.StateMachine):
         _follow_ball = states.FollowBall()
         _circle_ball_left = states.CircleBall(math.pi/3,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],1)
         _circle_ball_right = states.CircleBall(math.pi/3,[math.pi/2,-math.pi/8],[-math.pi/2,-math.pi/8],-1)
-        _adjust_aim_left = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1)
-        _adjust_aim_right = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1)
+        _adjust_aim_left = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1,True)
+        _adjust_aim_right = states.CircleBall(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1,True)
         _track_ball = states.TrackBall()
         _re_find_ball = states.TrackBall()
-        _stand_in_front_of_ball = states.FollowBall(math.pi/3.1)
+        _stand_in_front_of_ball = states.FollowBall(math.pi/3.5)
         _kick_ball = states.KickBall()
         
         """ goal interaction states"""
@@ -106,6 +106,7 @@ class Program(general_fsm.StateMachine):
         
         self.add_transition(_center_goal, "fail", _center_goal)
         self.add_transition(_center_goal, "focus middle", _line_up_shot)
+        self.add_transition(_center_goal, "focus one", _line_up_shot)
         
         self.add_transition(_line_up_shot, "lined up", _stand_in_front_of_ball)
         
@@ -125,9 +126,11 @@ class Program(general_fsm.StateMachine):
 
 
         """ error transitions """
+        self.add_transition(_kick_ball, "fallen", _get_up)
         self.add_transition(_track_goal, "fallen", _get_up)
         self.add_transition(_circle_ball_left, "fallen", _get_up)
         self.add_transition(_circle_ball_right, "fallen", _get_up)
+        self.add_transition(_stand_in_front_of_ball, "fallen", _get_up)
         self.add_transition(_track_ball, "fallen", _get_up)
         self.add_transition(_follow_ball, "fallen", _get_up)
         self.add_transition(_stand_still, "fallen", _get_up)

@@ -13,7 +13,7 @@ from Robot.Util import robotid
 #Uses a walking robot as 1 unit length
 def distance_to_ball():
     
-    return tan(pi/2-robotbody.get_head_position()[1])
+    return tan(pi/2-ball_angle()[1])
 
 # Returns the angles to the goal in relation to imu
 def goal_angle():

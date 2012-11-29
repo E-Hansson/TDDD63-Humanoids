@@ -159,8 +159,7 @@ class Guarding:
     def entry(self):
         
         robotbody.set_head_hardness(1.95)
-        current_head_position=robotbody.get_head_position()
-        self.wanted_head_position=[current_head_position[0],current_head_position[1]]        
+        self.wanted_head_position=robotbody.get_head_position()
         
         self.last_distance=0
         self.last_observation=0
