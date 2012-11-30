@@ -8,7 +8,7 @@ import time
 #Imports the right statemachine depending on the number
 
 if robotid.get_player_number() in (1,2,3):
-    from state_machine import Program
+    from state_machine_for_darwin import Program
 
 else:
     from goal_keeper import Program
