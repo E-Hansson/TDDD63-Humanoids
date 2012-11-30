@@ -36,7 +36,7 @@ class Program(general_fsm.StateMachine):
         _re_find_ball = erik_test_states.TrackBall()
         _stand_in_front_of_ball = states.FaceBall()
         _kick_ball = states.KickBall()
-        _circle_away_from_own_goal = erik_test_states.CircleBall()
+        _circle_away_from_own_goal = states.CircleBall()
         _stand_in_front_of_ball_force_kick = states.FaceBall()
         
         """ goal interaction states"""

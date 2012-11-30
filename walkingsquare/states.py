@@ -22,6 +22,9 @@ class CircleBall:
         self.wanted_head_position=[0,pi/4.5]
         set_head_position(self.wanted_head_position)
         
+        self.start_time = time.time()
+        self.time = 8
+        
     def update(self):
         if has_fallen():
             return "fallen"
@@ -36,7 +39,7 @@ class CircleBall:
                 walk.set_velocity(self.forward_velocity, 0.4, self.wanted_head_position[0]*1.2)
                 self.rotation_progress -= self.wanted_head_position[0]/12
         
-        if like(fabs(self.rotation_progress),self.wanted_rotation):
+        if time.time() > self.start_time + self.time:
             print("aiming away from our goal")
             return "done"
         
@@ -73,6 +76,7 @@ class CrudeGoalAdjusting:
         self.const_forward_velocity = 0.02
         self.wanted_rotation = pi/2
         self.rotation_progress = 0
+        self.start_time = time.time()
         self.time = 2
           
         self.head_ball = [0, pi/4.5]
@@ -105,7 +109,7 @@ class CrudeGoalAdjusting:
             walk.set_velocity(self.forward_velocity, 0.4*self.circle_direction, self.wanted_head_position[0]*1.2)
             self.rotation_progress -= self.wanted_head_position[0]/7.3
         
-            if like(fabs(self.rotation_progress),self.rotation_intervall):
+            if time.time() > self.start_time + self.time:
                 self.init_goal_check()
         
     def exit(self):
@@ -134,7 +138,6 @@ class CrudeGoalAdjusting:
         walk.set_velocity(0, 0, 0)
         set_head_position(self.head_start)
         self.wanted_head_position = [self.head_start[0],self.head_start[1]]
-        self.start_time = time.time()
                     
     def update_head_position(self):
         if like(self.head_position,self.head_end):

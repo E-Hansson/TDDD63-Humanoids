@@ -9,41 +9,6 @@ import time
 
 """        General motion states        """
 
-#A new version of circle ball based on imu angle instead of random guessing
-#Hopefully more accurate than the previous
-class CircleBall:
-    
-    def entry(self):
-        self.wanted_rotation=-pi+0.8
-        self.const_forward_velocity=0.02
-        self.forward_velocity=0
-        
-        self.start_angle = imu.get_angle()[2]
-        
-        self.wanted_head_position=[0,pi/4.5]
-        set_head_position(self.wanted_head_position)
-        
-    def update(self):
-        
-        if has_fallen():
-            return "fallen"
-        
-        set_head_position(ball_angle())
-        
-        if distance_to_ball() > pi/3.8:
-            self.forward_velocity = self.const_forward_velocity;
-        else:
-            self.forward_velocity = 0
-        
-        walk.set_velocity(self.forward_velocity, 0.4, self.wanted_head_position[0]*1.2)
-        
-        if imu.get_angle()[2]<self.start_angle+self.wanted_rotation:
-            print("aiming away from our goal")
-            return "done"
-    
-    def exit(self):
-        pass
-
 #A bit more slimed version of (what I presume) is the same state
 #Yes that means it's a new one
 class LineUpShot:
