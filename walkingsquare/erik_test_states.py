@@ -156,7 +156,7 @@ class TrackBall:
             if self.current_time>=self.timer+self.max_time_difference:
                 self.timer=self.current_time+self.max_time_difference
                 self.wanted_head_position[1]=pi/4.5
-                self.up_or_down="left"
+                self.left_or_right="left"
             else:
                 self.wanted_head_position[0]=-(self.current_time-self.timer)
             
