@@ -398,15 +398,14 @@ class CheckTeam:
             return "fallen"
         
         
-        if vision.has_new_goal_observation():
-            if self.opponents_goal():
-                print("fire at opponents goal")
-                return "fire"
-            else:
-                print ("turning towards opponents goal")
-                return "turn"
+        if self.opponents_goal():
+            print("fire at opponents goal")
+            return "fire"
+        else:
+            print ("turning towards opponents goal")
+            return "turn"
         
-            self.update_head_position()
+        self.update_head_position()
         
         if like(self.current_head_position,pi/3):
             return "fire"
