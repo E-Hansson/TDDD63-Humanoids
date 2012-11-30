@@ -168,7 +168,7 @@ class TrackBall:
     def update_head_position(self):
         if time.time()>self.timer:
             self.start_time=time.time()+self.time_between
-            self.timer=self.start+self.time_between
+            self.timer=self.start_time+self.time_between
             
             if robotbody.get_head_position()[1]<pi/15:
                 self.wanted_head_position[1]=0
@@ -208,109 +208,6 @@ class CrudeGoalAdjusting:
             self.timer=time.time()
         robotbody.set_head_position(0, self.timer+self.max_time_difference-time.time())
 
-
-class CrudeGoalAdjusting:
-    
-    def __init__(self,intervall,head_start,head_end,circle_direction,start_with_turn=False):
-        self.rotation_intervall = intervall
-        self.head_start = head_start
-        self.head_end = head_end
-        self.circle_direction = circle_direction
-        self.start_with_turn=start_with_turn
-    
-    def entry(self):
-        print("Circle this motherfucker!")
-        robotbody.set_head_hardness(0.95)
-        
-        walk.set_velocity(0, 0, 0)
-        self.forward_velocity = 0
-        self.const_forward_velocity = 0.02
-        self.wanted_rotation = pi/2
-        self.rotation_progress = 0
-        self.time = 2
-          
-        self.head_ball = [0, pi/4.5]
-        self.wanted_head_position = list(self.head_start)
-        self.looking_for_goal = not self.start_with_turn
-        robotbody.set_head_position_list(self.head_start)
-        
-    def update(self):
-        self.head_position = robotbody.get_head_position()
-        
-        if has_fallen():
-            return "fallen"
-        
-        if(self.looking_for_goal):
-            if vision.has_new_goal_observation():
-                
-                self.set_new_adjusting()
-                self.set_new_head_position()
-                print("Adjust " + self.adjust_direction)
-                return "adjust " + self.adjust_direction
-
-            self.update_head_position()
-            
-        else:
-            self.set_new_head_position()
-            if distance_to_ball() > pi/3.8:
-                self.forward_velocity = self.const_forward_velocity;
-            else:
-                self.forward_velocity = 0
-        
-            walk.set_velocity(self.forward_velocity, 0.4*self.circle_direction, self.wanted_head_position[0]*1.2)
-            self.rotation_progress -= self.wanted_head_position[0]/7.3
-        
-            if like(fabs(self.rotation_progress),self.rotation_intervall):
-                self.init_goal_check()
-        
-    def exit(self):
-        print("Rotation done")
-        
-    def set_new_adjusting(self):
-        temp_goal_angles=goal_angle()
-        if not like(temp_goal_angles[0],0,pi/36):
-            if temp_goal_angles[0] < 0:
-                self.adjust_direction = "left"
-            else:
-                self.adjust_direction = "right"
-                        
-        elif self.circle_direction==1:
-            self.adjust_direction = "right"
-                    
-        else:
-            self.adjust_direction = "left"
-
-    def set_wanted_rotation(self, rotation_intervall):
-        self.rotation_intervall = rotation_intervall
-        
-    def init_goal_check(self):
-        self.looking_for_goal = True
-        self.rotation_progress = 0
-        walk.set_velocity(0, 0, 0)
-        robotbody.set_head_position_list(self.head_start)
-        self.wanted_head_position = [self.head_start[0],self.head_start[1]]
-        self.start_time = time.time()
-                    
-    def update_head_position(self):
-        if like(self.head_position,self.head_end):
-            self.looking_for_goal = False
-            self.wanted_head_position = self.head_ball
-        else:
-            if like(self.wanted_head_position,self.head_position):
-                self.wanted_head_position[0] -= pi/16
-
-        robotbody.set_head_position_list(self.wanted_head_position)
-        
-    def set_new_head_position(self):
-        current_ball_angle=ball_angle()
-        if current_ball_angle[1]>pi/4.5:
-            self.wanted_head_position[1]=pi/4.5
-        else:
-            self.wanted_head_position[1]=current_ball_angle[1]
-        
-        self.wanted_head_position[0]=current_ball_angle[0]
-        robotbody.set_head_position_list(self.wanted_head_position)
-        
 """
 change:
 self.add_transition(_center_goal, "focus one", _line_up_shot)

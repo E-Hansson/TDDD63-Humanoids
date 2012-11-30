@@ -1,6 +1,7 @@
 from Robot.StateMachines import general_fsm
 import states
 import math
+import erik_test_states 
 
 class Program(general_fsm.StateMachine):
     def __init__(self):
@@ -28,21 +29,23 @@ class Program(general_fsm.StateMachine):
         
         """ ball interaction states"""
         _follow_ball = states.FollowBall()
-        _circle_ball_left = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],1)
-        _circle_ball_right = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],-1)
-        _adjust_aim_left = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1,True)
-        _adjust_aim_right = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1,True)
-        _track_ball = states.TrackBall()
-        _re_find_ball = states.TrackBall()
+        _circle_ball_left = erik_test_states.CrudeGoalAdjusting(1)
+        _circle_ball_right = erik_test_states.CrudeGoalAdjusting(-1)
+        #_circle_ball_left = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],1)
+        #_circle_ball_right = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],-1)
+        #_adjust_aim_left = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1,True)
+        #_adjust_aim_right = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1,True)
+        _track_ball = erik_test_states.TrackBall()
+        _re_find_ball = erik_test_states.TrackBall()
         _stand_in_front_of_ball = states.FaceBall()
         _kick_ball = states.KickBall()
-        _circle_away_from_own_goal = states.CircleBall()
+        _circle_away_from_own_goal = erik_test_states.CircleBall()
         _stand_in_front_of_ball_force_kick = states.FaceBall()
         
         """ goal interaction states"""
         _track_goal = states.TrackGoal(_circle_ball_left)
         _center_goal = states.FindMiddleOfGoal()
-        _line_up_shot = states.LineUpShot()
+        _line_up_shot = erik_test_states.LineUpShot()
         _check_team_goal = states.CheckTeam()
         
         """ misc states """
@@ -82,8 +85,8 @@ class Program(general_fsm.StateMachine):
         self.add_state(_follow_ball)
         self.add_state(_circle_ball_left)
         self.add_state(_circle_ball_right)
-        self.add_state(_adjust_aim_left)
-        self.add_state(_adjust_aim_right)
+        #self.add_state(_adjust_aim_left)
+        #self.add_state(_adjust_aim_right)
         self.add_state(_kick_ball)
         self.add_state(_stand_in_front_of_ball)
         self.add_state(_re_find_ball)
@@ -114,20 +117,24 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_stand_still,"timeout",_initiate_walking)
         self.add_transition(_initiate_walking, "timeout", _track_ball)
         self.add_transition(_follow_ball, "done", _circle_ball_left)
-        
+        """
         self.add_transition(_circle_ball_left, "adjust left", _adjust_aim_left)
         self.add_transition(_circle_ball_left, "adjust right", _adjust_aim_right)
         self.add_transition(_adjust_aim_left, "adjust left", _adjust_aim_left)
         self.add_transition(_adjust_aim_right, "adjust right", _adjust_aim_right)
         self.add_transition(_adjust_aim_left, "adjust right", _center_goal)
         self.add_transition(_adjust_aim_right, "adjust left", _center_goal)
+        """
+        self.add_transition(_circle_ball_left, "done", _center_goal)
+        self.add_transition(_circle_ball_right, "done", _center_goal)
+        self.add_transition(_circle_ball_left, "fail", _walk_straight)
         
-        self.add_transition(_center_goal, "fail", _stand_in_front_of_ball)
+        self.add_transition(_center_goal, "fail", _center_goal)
         self.add_transition(_center_goal, "focus middle", _line_up_shot)
-        self.add_transition(_center_goal, "focus one", _line_up_shot)
+        self.add_transition(_center_goal, "focus one",_check_team_goal)
         
         self.add_transition(_line_up_shot, "check again", _center_goal)
-        self.add_transition(_line_up_shot, "lined up", _stand_in_front_of_ball)
+        self.add_transition(_line_up_shot, "lined up", _check_team_goal)
         
         self.add_transition(_stand_in_front_of_ball, "done", _check_team_goal)
         self.add_transition(_check_team_goal, "fire", _one_step_forward)

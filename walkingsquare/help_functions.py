@@ -7,6 +7,10 @@ from Robot.Actions import walk
 from Robot.Util import robotid
 
 
+#def set_head_position(head_position):
+   # if head_position[0] > pi/3
+    
+
 # Makes sure the robot does not twist it's neck
 def twist_protection(head_position):
     #Head constants
