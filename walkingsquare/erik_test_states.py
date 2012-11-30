@@ -183,6 +183,7 @@ class CrudeGoalAdjusting:
             return "fallen"
         if vision.has_new_goal_observation():
             if like(goal_angle()[0],0):
+                print("found goal")
                 return "done"
         if (self.direction==1 and imu.get_angle()[2]>self.start_rotation+self.max_rotation)\
             or (self.direction==-1 and imu.get_angle()[2]<self.start_rotation+self.max_ritation):
@@ -191,12 +192,15 @@ class CrudeGoalAdjusting:
         
         self.update_head_position()
         
-        if distance_to_ball() > 1.5:
+        if distance_to_ball() > 1:
             self.forward_velocity = self.const_forward_velocity;
         else:
             self.forward_velocity = 0
         
-        walk.set_velocity(self.forward_velocity, 0.4*self.direction, robotbody.get_head_position()[0]*1.2)
+        walk.set_velocity(self.forward_velocity, 0.4*self.direction, ball_angle()[0]*1.2)
+        
+    def exit(self):
+        pass
         
     def update_head_position(self):
         self.current_time=time.time()

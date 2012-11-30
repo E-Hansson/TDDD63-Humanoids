@@ -8,9 +8,6 @@ class Program(general_fsm.StateMachine):
         #self.robocom = "http://192.168.0.5:5000/"
         """        Create our states        """
         
-        """ base states """
-        _base_behavior = states.BaseBehavior()
-        
         """ movement states """
         _stand_still = states.StandStill()
         _walk_straight = states.WalkSpeed(5, 0.02)
@@ -61,9 +58,6 @@ class Program(general_fsm.StateMachine):
         
         
         """        Adding the states        """
-        
-        """ base states """
-        self.add_state(_base_behavior)
         
         """ motion states """
         self.add_state(_stand_still)
