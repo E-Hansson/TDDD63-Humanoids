@@ -21,14 +21,14 @@ class CircleBall:
         self.start_angle = imu.get_angle()[2]
         
         self.wanted_head_position=[0,pi/5]
-        robotbody.set_head_position_list(self.wanted_head_position)
+        set_head_position(self.wanted_head_position)
         
     def update(self):
         
         if has_fallen():
             return "fallen"
         
-        self.update_head_position()
+        set_head_position(ball_angle())
         
         if distance_to_ball() > pi/3.8:
             self.forward_velocity = self.const_forward_velocity;
@@ -43,19 +43,6 @@ class CircleBall:
     
     def exit(self):
         pass
-    
-    def update_head_position(self):
-        self.wanted_head_position=ball_angle()
-        
-        if self.wanted_head_position[0]<-pi/3:
-            self.wanted_head_position[0]=-pi/3
-        elif self.wanted_head_position[0]>pi/3:
-            self.wanted_head_position[0]=pi/3
-        
-        if self.wanted_head_position[1]>pi/5:
-            self.wanted_head_position[1]=pi/5
-        
-        robotbody.set_head_position_list(self.wanted_head_position)
 
 #A bit more slimed version of (what I presume) is the same state
 #Yes that means it's a new one
@@ -67,7 +54,7 @@ class LineUpShot:
         self.goal_angle=robotbody.get_head_position()[0]
         
         self.wanted_head_position=[self.goal_angle,pi/5]
-        robotbody.set_head_position_list(self.wanted_head_position)
+        set_head_position(self.wanted_head_position)
         
         self.timer=time.time()+self.goal_angle*10
         
@@ -99,7 +86,7 @@ class LineUpShot:
                     return "lost ball"
                     
             else:
-                self.update_head_position()
+                set_head_position(ball_angle())
                     
             if self.first_ball_angle<0:
                 walk.set_velocity(0, -0.4, self.last_ball_angle)
@@ -108,20 +95,6 @@ class LineUpShot:
             
     def exit(self):
         walk.set_velocity(0, 0, 0)
-        
-    def update_head_position(self):
-        temp_ball_angles=ball_angle()
-        
-        if temp_ball_angles[1]>pi/5:
-            temp_ball_angles[1]=pi/5
-        
-        if temp_ball_angles[0]>pi/3:
-            temp_ball_angles[0]=pi/3
-        elif temp_ball_angles[0]<-pi/3:
-            temp_ball_angles[0]=-pi/3
-        
-        self.last_ball_angle=temp_ball_angles[0]
-        robotbody.set_head_position_list(temp_ball_angles)
 
 
 
@@ -129,21 +102,25 @@ class LineUpShot:
 #Hopefully it gives a bit more accuracy than the specific angle version
 class TrackBall:
     
+    def __init__(self):
+        self.max_time_difference=pi/3
+        self.angle=2*pi
+        self.time_between=1
+    
     def entry(self):
         print("Tracking ball")
         robotbody.set_head_hardness(0.95)
         self.wanted_head_position=robotbody.get_head_position()
         
         self.start_angle = imu.get_angle()[2]
-        self.angle=2*pi
         
-        self.time_between=1
         self.start_time=time.time()
         self.timer=self.start_time+self.time_between
-        self.wanted_head_tilt=0
+        
+        self.left_or_right="right"
         
         walk.turn_left(0.2)
-        robotbody.set_head_position_list(self.wanted_head_position)
+        set_head_position(self.wanted_head_position)
         
     def update(self):
         
@@ -166,28 +143,40 @@ class TrackBall:
         
         
     def update_head_position(self):
-        if time.time()>self.timer:
-            self.start_time=time.time()+self.time_between
-            self.timer=self.start_time+self.time_between
-            
-            if robotbody.get_head_position()[1]<pi/15:
+        self.current_time=time.time()
+        if self.left_and_rigt=="right":
+            if self.current_time>=self.timer+self.max_time_difference:
+                self.timer=self.current_time+self.max_time_difference
                 self.wanted_head_position[1]=0
+                self.up_and_down="left"
             else:
+                self.wanted_head_position[0]=self.current_time-self.timer
+        
+        else:
+            if self.current_time>=self.timer+self.max_time_difference:
+                self.timer=self.current_time+self.max_time_difference
                 self.wanted_head_position[1]=pi/5
+                self.up_and_down="right"
+            else:
+                self.wanted_head_position[0]=-(self.current_time-self.timer)
             
         self.wanted_head_position[0]=time.time()-self.start_time
+        set_head_position(self.wanted_head_position)
 
 #Not quite perfect Goal Update needs to be adjusted
 class CrudeGoalAdjusting:
     
     def __init__(self,direction):
         self.direction=direction
+        self.forward_velocity=0
+        self.const_foward_velocity=0.02
         
     def entry(self):
         self.max_rotation=(pi*2-1.6)*self.direction
         self.start_rotation=imu.get_angle()[2]
-        self.max_time_difference=0.55
+        self.max_time_difference=pi/5
         self.timer=time.time()
+        self.up_and_down="upp"
     
     def update(self):
         
@@ -203,13 +192,25 @@ class CrudeGoalAdjusting:
         
         self.update_head_position()
         
+        if distance_to_ball() > pi/3.8:
+            self.forward_velocity = self.const_forward_velocity;
+        else:
+            self.forward_velocity = 0
+        
+        walk.set_velocity(self.forward_velocity, 0.4*self.circle_direction, robotbody.get_head_position()[0]*1.2)
+        
     def update_head_position(self):
-        if time.time()>=self.timer+self.max_time_difference:
-            self.timer=time.time()
-        robotbody.set_head_position(0, self.timer+self.max_time_difference-time.time())
-
-"""
-change:
-self.add_transition(_center_goal, "focus one", _line_up_shot)
-self.add_transition(_center_goal, "focus one", _stand_in_front_of_ball)
-"""
+        self.current_time=time.time()
+        if self.up_and_down=="down":
+            if self.current_time>=self.timer+self.max_time_difference:
+                self.timer=self.current_time
+                self.up_and_down="up"
+            else:
+                set_head_position([0,self.current_time-self.timer])
+        
+        else:
+            if self.current_time-self.max_time_difference>=self.timer:
+                self.timer=self.current_time
+                self.up_and_down="down"
+            else:
+                set_head_position([0, self.timer+self.max_time_difference-self.current_time])
