@@ -146,10 +146,10 @@ class KickBall:
                     walk.set_velocity(0, 0, 0)
                     set_head_position([0,0])
                     self.start_time = time.time()
-                    if self.ball_angle>0:
-                        kick.forward_left()
-                    else:
-                        kick.forward_right()
+                   # if self.ball_angle>0:
+                   #     kick.forward_left()
+                   # else:
+                    kick.forward_right()
         
         if self.start_time and time.time()>self.time+self.start_time:
             return "done"
@@ -203,34 +203,34 @@ class FollowBall:
         
     def update(self):
         
-        print(robotbody.get_head_position()[1])
-        
         if has_fallen():
             return "fallen"
-        
+        """
         if not vision.has_new_ball_observation():
             if self.last_observation_of_ball+5<time.time():
                 walk.set_velocity(self.speed, 0, 0)
                 robotbody.set_eyes_led(31, 0, 0)
                 print("lost ball")
                 return "no ball"
+    
         else:
-            self.current_head_position = robotbody.get_head_position()
-            if like(self.current_head_position,self.wanted_head_position):
-                self.update_head_position()
+        """
+        self.current_head_position = robotbody.get_head_position()
+        self.update_head_position()
            
-                self.last_observation_of_ball=time.time()
-                self.last_distance=distance_to_ball()
+        self.last_observation_of_ball=time.time()
+        self.last_distance=distance_to_ball()
             
-            if self.last_distance>0 and self.last_distance<self.distance:
-                print ("standing in front of ball")
-                return "done"
+        print (str(self.last_distance)+"    :    "+str(self.distance))
+        if self.last_distance>0 and self.last_distance<self.distance:
+            print ("standing in front of ball")
+            return "done"
                 
-            if not like(self.current_head_position[0],0,pi/18):
-                walk.set_velocity(self.speed, 0.4, self.current_head_position[0])
+        if not like(self.current_head_position[0],0,pi/18):
+            walk.set_velocity(self.speed, 0.4, self.current_head_position[0])
                 
-            else:
-                walk.set_velocity(self.speed, 0, 0)
+        else:
+            walk.set_velocity(self.speed, 0, 0)
         
             
     def exit(self):

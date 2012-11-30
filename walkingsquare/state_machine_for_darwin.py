@@ -37,7 +37,7 @@ class Program(general_fsm.StateMachine):
         _stand_in_front_of_ball = states_for_darwin.FaceBall()
         _kick_ball = states_for_darwin.KickBall()
         _circle_away_from_own_goal = states_for_darwin.CircleBall()
-        _stand_in_front_of_ball_force_kick = states_for_darwin.FaceBall()
+        _stand_in_front_of_ball_force_kick = states_for_darwin.FollowBall(2.1)
         
         """ goal interaction states_for_darwin"""
         #_track_goal = states_for_darwin.TrackGoal(_circle_ball_left)
@@ -110,7 +110,7 @@ class Program(general_fsm.StateMachine):
         
         self.add_transition(_stand_still,"timeout",_initiate_walking)
         self.add_transition(_initiate_walking, "timeout", _track_ball)
-        self.add_transition(_follow_ball, "done", _circle_ball_left)
+        self.add_transition(_follow_ball, "done", _stand_in_front_of_ball_force_kick)
         """
         self.add_transition(_circle_ball_left, "adjust left", _adjust_aim_left)
         self.add_transition(_circle_ball_left, "adjust right", _adjust_aim_right)

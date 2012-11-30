@@ -209,8 +209,8 @@ class FollowBall:
             if self.last_observation_of_ball+5<time.time() or self.last_distance>=tan(5*pi/12):
                 walk.set_velocity(self.speed, 0, 0)
                 robotbody.set_eyes_led(31, 0, 0)
-                print("lost ball")
-                return "no ball"
+                #print("lost ball")
+                #return "no ball"
         else:
             self.current_head_position = robotbody.get_head_position()
             if like(self.current_head_position,self.wanted_head_position):
@@ -417,9 +417,9 @@ class LineUpShot:
         if has_fallen():
             return "fallen"
         
-        if self.current_time>=self.lost_ball_timer:
-            print ("lost ball")
-            return "lost ball"
+        #if self.current_time>=self.lost_ball_timer:
+            #print ("lost ball")
+            #return "lost ball"
         
         if self.timer and self.current_time>self.timer:
             return "check again"
