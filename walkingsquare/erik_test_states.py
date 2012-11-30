@@ -144,11 +144,11 @@ class TrackBall:
         
     def update_head_position(self):
         self.current_time=time.time()
-        if self.left_and_rigt=="right":
+        if self.left_or_right=="right":
             if self.current_time>=self.timer+self.max_time_difference:
                 self.timer=self.current_time+self.max_time_difference
                 self.wanted_head_position[1]=0
-                self.up_and_down="left"
+                self.left_or_right="left"
             else:
                 self.wanted_head_position[0]=self.current_time-self.timer
         
@@ -156,7 +156,7 @@ class TrackBall:
             if self.current_time>=self.timer+self.max_time_difference:
                 self.timer=self.current_time+self.max_time_difference
                 self.wanted_head_position[1]=pi/5
-                self.up_and_down="right"
+                self.left_or_right="right"
             else:
                 self.wanted_head_position[0]=-(self.current_time-self.timer)
             
@@ -169,7 +169,7 @@ class CrudeGoalAdjusting:
     def __init__(self,direction):
         self.direction=direction
         self.forward_velocity=0
-        self.const_foward_velocity=0.02
+        self.const_forward_velocity=0.02
         
     def entry(self):
         self.max_rotation=(pi*2-1.6)*self.direction
@@ -192,12 +192,12 @@ class CrudeGoalAdjusting:
         
         self.update_head_position()
         
-        if distance_to_ball() > pi/3.8:
+        if distance_to_ball() > 1.5:
             self.forward_velocity = self.const_forward_velocity;
         else:
             self.forward_velocity = 0
         
-        walk.set_velocity(self.forward_velocity, 0.4*self.circle_direction, robotbody.get_head_position()[0]*1.2)
+        walk.set_velocity(self.forward_velocity, 0.4*self.direction, robotbody.get_head_position()[0]*1.2)
         
     def update_head_position(self):
         self.current_time=time.time()

@@ -7,31 +7,19 @@ from Robot.Actions import walk
 from Robot.Util import robotid
 
 
-#def set_head_position(head_position):
-   # if head_position[0] > pi/3
-    
-
-# Makes sure the robot does not twist it's neck
-def twist_protection(head_position):
-    #Head constants
-    x_max = (pi/3)
-    x_min = (-pi/3)
-    y_max = (pi/5)
-    y_min = (-pi/5)
-    #Must be negative
-    multp = -0.1
-    active = False
-    
-    if head_position[0] > x_max or head_position[0] < x_min:
-        robotbody.set_head_position(head_position[0] + head_position[0]*multp, head_position[1])
-        active = True
-        print("Twist warning X")
-    if head_position[1] > y_max or head_position[1] < y_min:
-        robotbody.set_head_position(head_position[0], head_position[1] + head_position[1]*multp)
-        active = True
-        print("Twist warning Y")
+#sets head position, protects from twist
+def set_head_position(head_position):
+    if head_position[0] > pi/3:
+        head_position[0] = pi/3
+    elif head_position[0] < -pi/3:
+        head_position[0] = -pi/3
         
-    return active
+    if head_position[1] > pi/4.5:
+        head_position[1] = pi/4.5
+    elif head_position[1] < -pi/4.5:
+        head_position[1] = -pi/4.5
+        
+    robotbody.set_head_position_list(head_position)
 
 """        Written by Erik            """
 
