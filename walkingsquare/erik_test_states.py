@@ -173,9 +173,10 @@ class CrudeGoalAdjusting:
     def entry(self):
         self.max_rotation=(pi*2-1.6)*self.direction
         self.start_rotation=imu.get_angle()[2]
-        self.max_time_difference=pi/4.5
+        self.max_angle_timer=pi/4.5
+        self.min_angle_timer=-pi/9
         self.timer=time.time()
-        self.up_and_down="upp"
+        self.up_and_down="up"
     
     def update(self):
         
@@ -196,20 +197,20 @@ class CrudeGoalAdjusting:
         else:
             self.forward_velocity = 0
         
-        walk.set_velocity(self.forward_velocity, 0.4*self.direction, robotbody.get_head_position()[0]*1.2)
+        walk.set_velocity(self.forward_velocity,0.4*self.direction,robotbody.get_head_position()[0]*1.2)
         
     def update_head_position(self):
         self.current_time=time.time()
         if self.up_and_down=="down":
-            if self.current_time>=self.timer+self.max_time_difference:
-                self.timer=self.current_time
+            if self.current_time>=self.timer+self.max_angle_timer:
+                self.timer=self.current_time+self.max_angle_timer
                 self.up_and_down="up"
             else:
                 set_head_position([0,self.current_time-self.timer])
         
         else:
-            if self.current_time-self.max_time_difference>=self.timer:
-                self.timer=self.current_time
+            if self.current_time>=self.timer-self.min_angle_timer:
+                self.timer=self.current_time-self.min_angle_timer
                 self.up_and_down="down"
             else:
-                set_head_position([0, self.timer+self.max_time_difference-self.current_time])
+                set_head_position([0,self.timer-self.current_time])
