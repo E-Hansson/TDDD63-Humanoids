@@ -20,7 +20,7 @@ class CircleBall:
         
         self.start_angle = imu.get_angle()[2]
         
-        self.wanted_head_position=[0,pi/5]
+        self.wanted_head_position=[0,pi/4.5]
         set_head_position(self.wanted_head_position)
         
     def update(self):
@@ -53,7 +53,7 @@ class LineUpShot:
         robotbody.set_head_hardness(0.95)
         self.goal_angle=robotbody.get_head_position()[0]
         
-        self.wanted_head_position=[self.goal_angle,pi/5]
+        self.wanted_head_position=[self.goal_angle,pi/4.5]
         set_head_position(self.wanted_head_position)
         
         self.timer=time.time()+self.goal_angle*10
@@ -144,23 +144,22 @@ class TrackBall:
         
     def update_head_position(self):
         self.current_time=time.time()
-        if self.left_or_right=="right":
+        if self.left_or_right=="left":
             if self.current_time>=self.timer+self.max_time_difference:
                 self.timer=self.current_time+self.max_time_difference
                 self.wanted_head_position[1]=0
-                self.left_or_right="left"
+                self.left_or_right="right"
             else:
                 self.wanted_head_position[0]=self.current_time-self.timer
         
         else:
             if self.current_time>=self.timer+self.max_time_difference:
                 self.timer=self.current_time+self.max_time_difference
-                self.wanted_head_position[1]=pi/5
-                self.left_or_right="right"
+                self.wanted_head_position[1]=pi/4.5
+                self.up_or_down="left"
             else:
                 self.wanted_head_position[0]=-(self.current_time-self.timer)
             
-        self.wanted_head_position[0]=time.time()-self.start_time
         set_head_position(self.wanted_head_position)
 
 #Not quite perfect Goal Update needs to be adjusted
@@ -174,7 +173,7 @@ class CrudeGoalAdjusting:
     def entry(self):
         self.max_rotation=(pi*2-1.6)*self.direction
         self.start_rotation=imu.get_angle()[2]
-        self.max_time_difference=pi/5
+        self.max_time_difference=pi/4.5
         self.timer=time.time()
         self.up_and_down="upp"
     
