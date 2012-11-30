@@ -14,8 +14,8 @@ def set_head_position(head_position):
     elif head_position[0] < -pi/3:
         head_position[0] = -pi/3
         
-    if head_position[1] > pi/4.5:
-        head_position[1] = pi/4.5
+    if head_position[1] > pi/8:
+        head_position[1] = pi/8
     elif head_position[1] < -pi/4.5:
         head_position[1] = -pi/4.5
         

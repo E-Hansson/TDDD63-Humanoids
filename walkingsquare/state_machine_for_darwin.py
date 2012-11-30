@@ -1,64 +1,65 @@
 from Robot.StateMachines import general_fsm
-import states
-import math
-import states 
+import states_for_darwin
+from math import pi
+import states_for_darwin 
 
 class Program(general_fsm.StateMachine):
     def __init__(self):
-        """        Create our states        """
+        #self.robocom = "http://192.168.0.5:5000/"
+        """        Create our states_for_darwin        """
         
-        """ movement states """
-        _stand_still = states.StandStill()
-        _walk_straight = states.WalkSpeed(3)
-        _turn_left_gyro = states.TurnGyro(math.pi/2-0.4) # Adjust for bias in the imu.
-        _initiate_walking = states.WalkSpeed(3,0)
-        _walk_on_spot = states.WalkSpeed(0.4,0)
-        _start_walking = states.StartWalk(0.4)
-        _one_step_forward_force_kick = states.FollowBall(math.pi/6,True)
-        _one_step_forward = states.FollowBall(math.pi/6,True)
+        """ movement states_for_darwin """
+        _stand_still = states_for_darwin.StandStill()
+        _walk_straight = states_for_darwin.WalkSpeed(3)
+        _turn_left_gyro = states_for_darwin.TurnGyro(pi/2-0.4) # Adjust for bias in the imu.
+        _initiate_walking = states_for_darwin.WalkSpeed(3,0)
+        _walk_on_spot = states_for_darwin.WalkSpeed(0.02,0)
+        _start_walking = states_for_darwin.StartWalk(0.02)
+        _one_step_forward_force_kick = states_for_darwin.FollowBall(pi,True)
+        _one_step_forward = states_for_darwin.FollowBall(pi,True)
         
                 
-        """ arm states """
-        _lift_right_arm = states.MoveArm("right", relation="ground")
-        _lift_left_arm = states.MoveArm("left", relation="ground")
-        _lower_right_arm = states.MoveArm("right",angle=(math.pi/2,0,0),relation="ground")
+        """ arm states_for_darwin """
+        _lift_right_arm = states_for_darwin.MoveArm("right", relation="ground")
+        _lift_left_arm = states_for_darwin.MoveArm("left", relation="ground")
+        _lower_right_arm = states_for_darwin.MoveArm("right",angle=(pi/2,0,0),relation="ground")
         
-        """ ball interaction states"""
-        _follow_ball = states.FollowBall()
-        _circle_ball_left = states.CrudeGoalAdjusting(1)
-        _circle_ball_right = states.CrudeGoalAdjusting(-1)
-        #_circle_ball_left = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],1)
-        #_circle_ball_right = states.CrudeGoalAdjusting(math.pi/3,[math.pi/18,-math.pi/8],[-math.pi/18,-math.pi/8],-1)
-        #_adjust_aim_left = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],1,True)
-        #_adjust_aim_right = states.CrudeGoalAdjusting(math.pi/12,[0,-math.pi/8],[0,-math.pi/8],-1,True)
-        _track_ball = states.TrackBall()
-        _re_find_ball = states.TrackBall()
-        _stand_in_front_of_ball = states.FaceBall()
-        _kick_ball = states.KickBall()
-        _circle_away_from_own_goal = states.CircleBall()
-        _stand_in_front_of_ball_force_kick = states.FaceBall()
+        """ ball interaction states_for_darwin"""
+        _follow_ball = states_for_darwin.FollowBall()
+        _circle_ball_left = states_for_darwin.CrudeGoalAdjusting(1)
+        _circle_ball_right = states_for_darwin.CrudeGoalAdjusting(-1)
+        #_circle_ball_left = states_for_darwin.CrudeGoalAdjusting(pi/3,[pi/18,-pi/8],[-pi/18,-pi/8],1)
+        #_circle_ball_right = states_for_darwin.CrudeGoalAdjusting(pi/3,[pi/18,-pi/8],[-pi/18,-pi/8],-1)
+        #_adjust_aim_left = states_for_darwin.CrudeGoalAdjusting(pi/12,[0,-pi/8],[0,-pi/8],1,True)
+        #_adjust_aim_right = states_for_darwin.CrudeGoalAdjusting(pi/12,[0,-pi/8],[0,-pi/8],-1,True)
+        _track_ball = states_for_darwin.TrackBall()
+        _re_find_ball = states_for_darwin.TrackBall()
+        _stand_in_front_of_ball = states_for_darwin.FaceBall()
+        _kick_ball = states_for_darwin.KickBall()
+        _circle_away_from_own_goal = states_for_darwin.CircleBall()
+        _stand_in_front_of_ball_force_kick = states_for_darwin.FaceBall()
         
-        """ goal interaction states"""
-        #_track_goal = states.TrackGoal(_circle_ball_left)
-        _center_goal = states.FindMiddleOfGoal()
-        _line_up_shot = states.LineUpShot()
-        _check_team_goal = states.CheckTeam()
+        """ goal interaction states_for_darwin"""
+        #_track_goal = states_for_darwin.TrackGoal(_circle_ball_left)
+        _center_goal = states_for_darwin.FindMiddleOfGoal()
+        _line_up_shot = states_for_darwin.LineUpShot()
+        _check_team_goal = states_for_darwin.CheckTeam()
         
-        """ misc states """
-        _set_eye_color_blue = states.SetEyeColor(0,0,31)
-        _set_eye_color_red = states.SetEyeColor(31,0,0)
+        """ misc states_for_darwin """
+        _set_eye_color_blue = states_for_darwin.SetEyeColor(0,0,31)
+        _set_eye_color_red = states_for_darwin.SetEyeColor(31,0,0)
         
-        """ system states """
-        _terminate = states.Exit()
-        _get_up = states.GetUp()
+        """ system states_for_darwin """
+        _terminate = states_for_darwin.Exit()
+        _get_up = states_for_darwin.GetUp()
         # Initiate the StateMachine, and give it an initial state 
         #super(Program, self).__init__(_stand_still)
         super(Program, self).__init__(_stand_still)
         
         
-        """        Adding the states        """
+        """        Adding the states_for_darwin        """
         
-        """ motion states """
+        """ motion states_for_darwin """
         self.add_state(_stand_still)
         self.add_state(_walk_straight)
         self.add_state(_turn_left_gyro)
@@ -68,13 +69,13 @@ class Program(general_fsm.StateMachine):
         self.add_state(_one_step_forward)
         self.add_state(_one_step_forward_force_kick)
         
-        """ arm states """
+        """ arm states_for_darwin """
         self.add_state(_lift_right_arm)
         self.add_state(_lift_left_arm)
         self.add_state(_lower_right_arm)
         
         
-        """ball interaction states"""
+        """ball interaction states_for_darwin"""
         self.add_state(_follow_ball)
         self.add_state(_circle_ball_left)
         self.add_state(_circle_ball_right)
@@ -86,7 +87,7 @@ class Program(general_fsm.StateMachine):
         self.add_state(_circle_away_from_own_goal)
         self.add_state(_stand_in_front_of_ball_force_kick)
         
-        """goal interaction states"""
+        """goal interaction states_for_darwin"""
         #self.add_state(_track_goal)
         self.add_state(_center_goal)
         self.add_state(_line_up_shot)
@@ -97,13 +98,13 @@ class Program(general_fsm.StateMachine):
         self.add_state(_set_eye_color_blue)
         self.add_state(_set_eye_color_red)
         
-        """ system states """
+        """ system states_for_darwin """
         self.add_state(_terminate)
         self.add_state(_get_up)
         
         self.add_state(_track_ball)
         
-        """        Adding transitions between states        """
+        """        Adding transitions between states_for_darwin        """
         
         """ motion transitions """
         
