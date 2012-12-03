@@ -23,7 +23,7 @@ class CircleBall:
         set_head_position(self.wanted_head_position)
         
         self.start_time = time.time()
-        self.time = 17
+        self.time = 13
         
     def update(self):
         if has_fallen():
@@ -63,10 +63,10 @@ class CrudeGoalAdjusting:
     def __init__(self,direction):
         self.direction=direction
         self.forward_velocity=0
-        self.const_forward_velocity=0.02
+        self.const_forward_velocity=0.01
         
         #Turning timers
-        self.time = 34
+        self.time = 26
         
     def entry(self):
         print("Crude")
@@ -91,7 +91,7 @@ class CrudeGoalAdjusting:
         
         self.update_head_position()
         
-        if distance_to_ball() > pi*2:
+        if distance_to_ball() > pi*3:
             self.forward_velocity = self.const_forward_velocity;
         else:
             self.forward_velocity = 0
@@ -100,7 +100,7 @@ class CrudeGoalAdjusting:
         
         if time.time() > self.start_time + self.time:
             print("aiming away from our goal")
-            return "done"
+            return "fail"
         
     def exit(self):
         pass
@@ -193,7 +193,7 @@ class FollowBall:
     def entry(self):
         print("following the ball")
         robotbody.set_head_hardness(0.95)
-        self.last_observation_of_ball=-1
+        self.last_observation_of_ball=time.time()
         if self.look_down:
             self.wanted_head_position=[0,pi/8]
         else:
@@ -205,7 +205,7 @@ class FollowBall:
         
         if has_fallen():
             return "fallen"
-        """
+        
         if not vision.has_new_ball_observation():
             if self.last_observation_of_ball+5<time.time():
                 walk.set_velocity(self.speed, 0, 0)
@@ -213,15 +213,13 @@ class FollowBall:
                 print("lost ball")
                 return "no ball"
     
-        else:
-        """
         self.current_head_position = robotbody.get_head_position()
+        
         self.update_head_position()
            
         self.last_observation_of_ball=time.time()
         self.last_distance=distance_to_ball()
             
-        print (str(self.last_distance)+"    :    "+str(self.distance))
         if self.last_distance>0 and self.last_distance<self.distance:
             print ("standing in front of ball")
             return "done"
