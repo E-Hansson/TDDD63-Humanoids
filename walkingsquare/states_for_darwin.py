@@ -6,8 +6,6 @@ from help_functions import *
 from math import pi, fabs, tan
 
 import time
-
-"""        General motion states        """
     
 
 """ Circles approximately, due to the unsteady walking, 180 degrees around the ball """
