@@ -23,7 +23,9 @@ class CircleBall:
         set_head_position(self.wanted_head_position)
         
         self.start_time = time.time()
-        self.time = 13
+        self.time = 10
+        
+        print ("Turning away from our goal")
         
     def update(self):
         if has_fallen():
@@ -66,10 +68,11 @@ class CrudeGoalAdjusting:
         self.const_forward_velocity=0.01
         
         #Turning timers
-        self.time = 26
+        self.time = 20
         
     def entry(self):
-        print("Crude")
+        print("Looking for a goal")
+        
         #HeadTimers
         self.max_angle_timer=pi/8
         self.min_angle_timer=-pi/9
@@ -85,6 +88,7 @@ class CrudeGoalAdjusting:
             return "fallen"
         if vision.has_new_goal_observation():
             if like(goal_angle()[0],0):
+                robotbody.set_eyes_led(0, 31, 0)
                 print("found goal")
                 return "done"
 
@@ -99,11 +103,12 @@ class CrudeGoalAdjusting:
         walk.set_velocity(self.forward_velocity, 0.4*self.direction, ball_angle()[0]*1.2)
         
         if time.time() > self.start_time + self.time:
-            print("aiming away from our goal")
+            robotbody.set_eyes_led(0, 0, 31)
+            print("lucky shot")
             return "fail"
         
     def exit(self):
-        pass
+        walk.set_velocity(0, 0, 0)
         
     def update_head_position(self):
         self.current_time=time.time()
@@ -127,7 +132,7 @@ class KickBall:
     
     def entry(self):
         print ("kicking the ball")
-        self.time=6
+        self.time=4
         self.wanted_head_position=[0,pi/8]
         set_head_position(self.wanted_head_position)
         self.start_time=False
@@ -146,10 +151,10 @@ class KickBall:
                     walk.set_velocity(0, 0, 0)
                     set_head_position([0,0])
                     self.start_time = time.time()
-                   # if self.ball_angle>0:
-                   #     kick.forward_left()
-                   # else:
-                    kick.forward_right()
+                    if self.ball_angle>0:
+                        kick.forward_left()
+                    else:
+                        kick.forward_right()
         
         if self.start_time and time.time()>self.time+self.start_time:
             return "done"
@@ -157,28 +162,6 @@ class KickBall:
     
     def exit(self):
         print ("kicked the ball")
-    
-
-class FaceBall:
-    
-    def entry(self):
-        print("facing the ball")
-        self.last_ball_angle=ball_angle()[0]
-        
-        if self.last_ball_angle<0:
-            walk.set_velocity(0, -0.4, self.last_ball_angle)
-        else:
-            walk.set_velocity(0, 0.4, self.last_ball_angle)
-    
-    def update(self):
-        if has_fallen():
-            return "fallen"
-        if like(ball_angle()[0],0):
-            return "done"
-        
-    def exit(self):
-        print("standing in front of ball")
-        
 
 #A class which follows the ball and stops when the angle of the head is close enough
 class FollowBall:
@@ -221,6 +204,7 @@ class FollowBall:
         self.last_distance=distance_to_ball()
             
         if self.last_distance>0 and self.last_distance<self.distance:
+            robotbody.set_eyes_led(0, 31, 0)
             print ("standing in front of ball")
             return "done"
                 
@@ -260,6 +244,7 @@ class StandStill:
         print("Entry still")
         motion.stand_still()
         self.start_time = time.time()
+        robotbody.set_eyes_led(0, 0, 31)
     def update(self):
         if has_fallen():
             return "fallen"
@@ -274,6 +259,7 @@ class StandStill:
 class GetUp:
         
     def entry (self):
+        robotbody.set_eyes_led(31, 0, 0)
         motion.get_up()
     
     def update (self):
@@ -281,48 +267,11 @@ class GetUp:
             return ("done")
     
     def exit (self):
-        print("sitting")
+        print ("sitting")
+        robotbody.set_eyes_led(0, 0, 31)
         
 
 """        Walking states        """
-
-
-class StartWalk:
-    
-    def __init__(self,speed):
-        self.speed=speed
-        
-    def entry(self):
-        print("start walking")
-        walk.walk_forward(self.speed)
-        
-    def update(self):
-        if has_fallen():
-            return "fallen"
-        return "done"
-    
-    def exit(self):
-        print ("walking at speed "+str(self.speed))
-        
-class WalkStraight:
-    """The robot walks forward some time"""
-
-    def __init__(self, time):
-        self.time = time
-    def entry(self):
-        print("Entry walk")
-        self.start_time = time.time()
-
-        walk.walk_forward(0.02)
-
-    def update(self):
-        if has_fallen():
-            return "fallen"
-        if time.time() > self.start_time + self.time:
-            return "timeout"
-    def exit(self):
-        print("Exit walk")
-        
 
 class WalkSpeed:
     """The robot walks forward some time"""
@@ -333,6 +282,8 @@ class WalkSpeed:
     def entry(self):
         print("See the robot walk")
         self.start_time = time.time()
+        
+        robotbody.set_eyes_led(0, 0, 31)
 
         walk.walk_forward(self.speed)
 
@@ -364,9 +315,11 @@ class CheckTeam:
         
         if vision.has_new_goal_observation():
             if self.opponents_goal():
+                robotbody.set_eyes_led(0, 31, 0)
                 print("fire at opponents goal")
                 return "fire"
             else:
+                robotbody.set_eyes_led(0, 0, 31)
                 print ("turning towards opponents goal")
                 return "turn"
         
@@ -419,10 +372,12 @@ class LineUpShot:
             return "fallen"
         
         if self.current_time>=self.lost_ball_timer:
+            robotbody.set_eyes_led(31, 0, 0)
             print ("lost ball")
             return "lost ball"
         
         if self.timer and self.current_time>self.timer:
+            robotbody.set_eyes_led(0, 0, 31)
             return "check again"
         
         if not self.timer:
@@ -434,6 +389,7 @@ class LineUpShot:
         
         else:
             if like(self.first_ball_angle,self.goal_angle,pi/9):
+                robotbody.set_eyes_led(0, 31, 0)
                 print("lined up")
                 return "lined up"
             
@@ -480,6 +436,7 @@ class FindMiddleOfGoal:
         if like(self.wanted_head_position,self.current_head_position):
 
             if self.ending:
+                robotbody.set_eyes_led(0, 31, 0)
                 return "focus one"
             
             elif len(self.angles)==0:
@@ -489,6 +446,7 @@ class FindMiddleOfGoal:
                     print("got first observation")
                     
                 elif like(self.current_head_position[0],pi/2):
+                    robotbody.set_eyes_led(31, 0, 0)
                     print("fail")
                     return "fail"
                 
@@ -508,6 +466,7 @@ class FindMiddleOfGoal:
                     self.set_next_head_position()
             
             else:
+                robotbody.set_eyes_led(0, 31, 0)
                 print("focus middle")
                 return "focus middle"
 
@@ -609,104 +568,6 @@ class TrackBall:
                 self.wanted_head_position[0]=-(self.current_time-self.timer)
             
         set_head_position(self.wanted_head_position)
-
-class Turn:
-    """The robot turns for some timyawyawe"""
-    
-    def __init__(self,time):
-        self.time = time
-        self.number_of_turns = 0
-    def entry(self):
-        print("Entry turn")
-        self.start_time = time.time()
-        self.number_of_turns += 1
-        walk.turn_left(0.4)
-    def update(self):
-        if has_fallen():
-            return "fallen"
-        if self.number_of_turns == 4:
-            return "complete"
-        if time.time() > self.start_time + self.time:
-            return "done"
-        
-    def exit(self):
-        print("Exit turn")
-
-
-class TurnGyro:
-    """The robot turn a certain angle"""
-
-    def __init__(self,angle):
-        self.angle = angle
-        self.number_of_turns = 0
-    def entry(self):
-        print("Entry gyro turn")
-        self.start_angle = imu.get_angle()[2]
-        self.number_of_turns += 1
-        walk.turn_left(0.4)
-    def update(self):
-        if has_fallen():
-            return "fallen"
-        if imu.get_angle()[2] > self.start_angle + self.angle:
-            return "done"
-    def exit(self):
-        walk.turn_left(0)
-        print("Exit gyro turn")
-
-
-"""        Arm states        """
-
-class MoveArm:
-    """ a state to make the robot lift the right arm """
-    
-    def __init__ (self,arm,angle=(0,0,0),relation="body"):
-        self.relation=relation
-        self.angle=angle
-        self.arm=arm
-        self.init_angle=angle
-        
-    def entry (self):
-        print("moving "+self.arm+" arm")
-        if self.arm=="right":
-            self.angle=set_right_arm_position(self.init_angle[0],self.init_angle[1],self.init_angle[2],self.relation)
-        
-        elif self.arm=="left":
-            self.angle=set_left_arm_position(self.init_angle[0],self.init_angle[1],self.init_angle[2],self.relation)
-    
-    def update (self):
-        if has_fallen():
-            return "fallen"
-        if self.arm=="right" and like(get_right_arm_position()[0],self.angle[0]):
-            return "done"
-        
-        elif self.arm=="left" and like(get_left_arm_position()[0],self.angle[0]):
-            return "done"
-        
-    def exit (self):
-        print ("done")
-        
-
-"""        Eye states        """
-
-class SetEyeColor:
-    """ Sets the Eye color of the robot"""
-    
-    def __init__(self,red,green,blue):
-        self.color=(red,green,blue)
-        print ("Changing eye color")
-        
-    def entry(self):
-        robotbody.set_eyes_led(self.color[0],self.color[1],self.color[2])
-
-    def update(self):
-        if has_fallen():
-            return "fallen"
-        else:
-            return "done"
-        
-    def exit(self):
-        print("terminating")
-        
         
 """        System states        """
 
