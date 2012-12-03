@@ -11,6 +11,10 @@ import states_for_darwin
     *Calibration of the find middle of goal states
     *Test if it is possible to remove the _one_step_forward state
     and replace it by setting it's input to the _stand_in_front_of_ball state
+    *Test if it works without the initiate walking state
+    *Make the robot check so that it is still in posession of the ball
+    *Make the robot turn right if the ball leaves to the right while tracking
+    *The same as above but for left.
     
 """
 
@@ -22,8 +26,8 @@ class Program(general_fsm.StateMachine):
         """ Pure movement states """
         _stand_still = states_for_darwin.StandStill()
         _walk_straight = states_for_darwin.WalkSpeed(3)
-        _after_kick_walking = states_for_darwin.WalkSpeed(15)
-        _initiate_walking = states_for_darwin.WalkSpeed(3,0)
+        _after_kick_walk = states_for_darwin.WalkSpeed(15)
+        #_initiate_walking = states_for_darwin.WalkSpeed(3,0)
         
 
         """ ball interaction states"""
@@ -31,7 +35,7 @@ class Program(general_fsm.StateMachine):
         _stand_in_front_of_ball = states_for_darwin.FollowBall(2.1)
         _one_step_forward = states_for_darwin.FollowBall(pi,True)
         
-        _circle_ball_left = states_for_darwin.CrudeGoalAdjusting(1)
+        _finding_the_goal = states_for_darwin.CrudeGoalAdjusting(1)
         
         _kick_ball = states_for_darwin.KickBall()
         _circle_away_from_own_goal = states_for_darwin.CircleBall()
@@ -61,13 +65,13 @@ class Program(general_fsm.StateMachine):
         """ pure motion states """
         self.add_state(_stand_still)
         self.add_state(_walk_straight)
-        self.add_state(_initiate_walking)
+        #self.add_state(_initiate_walk)
         self.add_state(_one_step_forward)
-        self.add_state(_after_kick_walking)
+        self.add_state(_after_kick_walk)
         
         """ ball interaction states """
         self.add_state(_follow_ball)
-        self.add_state(_circle_ball_left)
+        self.add_state(_finding_the_goal)
         self.add_state(_kick_ball)
         self.add_state(_stand_in_front_of_ball)
         self.add_state(_circle_away_from_own_goal)
@@ -88,14 +92,14 @@ class Program(general_fsm.StateMachine):
         """        Adding transitions between states_for_darwin        """
         
         """ if everything goes well transitions """
-        self.add_transition(_stand_still,"timeout",_initiate_walking)
-        self.add_transition(_initiate_walking, "timeout", _track_ball)
+        #self.add_transition(_stand_still,"timeout",_initiate_walking)
+        #self.add_transition(_initiate_walking, "timeout", _track_ball)
+        self.add_transition(_stand_still, "timeout", _track_ball)
         self.add_transition(_track_ball,"done",_follow_ball)
-        self.add_transition(_follow_ball, "done", _circle_away_from_own_goal)
-        #self.add_transition(_follow_ball, "done", _circle_ball_left)
+        self.add_transition(_follow_ball, "done", _finding_the_goal)
 
-        self.add_transition(_circle_ball_left, "done", _center_goal)
-        self.add_transition(_circle_ball_left, "fail", _stand_in_front_of_ball)
+        self.add_transition(_finding_the_goal, "done", _center_goal)
+        self.add_transition(_finding_the_goal, "fail", _stand_in_front_of_ball)
         
         self.add_transition(_center_goal, "fail", _center_goal)
         self.add_transition(_center_goal, "focus middle", _line_up_shot)
@@ -107,8 +111,8 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_check_team_goal, "fire", _stand_in_front_of_ball)
         self.add_transition(_stand_in_front_of_ball, "done", _one_step_forward)
         self.add_transition(_one_step_forward, "done", _kick_ball)
-        self.add_transition(_kick_ball, "done", _after_kick_walking)
-        self.add_transition(_after_kick_walking, "timeout", _track_ball)
+        self.add_transition(_kick_ball, "done", _after_kick_walk)
+        self.add_transition(_after_kick_walk, "timeout", _track_ball)
         
         self.add_transition(_check_team_goal, "turn", _circle_away_from_own_goal)
         self.add_transition(_circle_away_from_own_goal, "done", _stand_in_front_of_ball)
@@ -130,11 +134,11 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_check_team_goal, "fallen", _get_up)
         self.add_transition(_kick_ball, "fallen", _get_up)
         self.add_transition(_line_up_shot, "fallen", _line_up_shot)
-        self.add_transition(_circle_ball_left, "fallen", _get_up)
+        self.add_transition(_finding_the_goal, "fallen", _get_up)
         self.add_transition(_stand_in_front_of_ball, "fallen", _get_up)
         self.add_transition(_track_ball, "fallen", _get_up)
         self.add_transition(_follow_ball, "fallen", _get_up)
         self.add_transition(_stand_still, "fallen", _get_up)
-        self.add_transition(_initiate_walking, "fallen", _get_up)
+        #self.add_transition(_initiate_walking, "fallen", _get_up)
         self.add_transition(_walk_straight, "fallen", _get_up)
         self.add_transition(_get_up, "done", _stand_still)
