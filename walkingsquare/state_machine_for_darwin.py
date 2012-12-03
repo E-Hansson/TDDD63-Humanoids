@@ -9,6 +9,8 @@ import states_for_darwin
     *Calibration of the goal finding state
     *Calibration of the lining up state
     *Calibration of the find middle of goal states
+    *Test if it is possible to remove the _one_step_forward state
+    and replace it by setting it's input to the _stand_in_front_of_ball state
     
 """
 
