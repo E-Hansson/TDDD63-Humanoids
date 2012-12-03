@@ -3,32 +3,49 @@ import states_for_darwin
 from math import pi
 import states_for_darwin 
 
+""" 
+
+    Still needs to be done:
+    *Calibration of the goal finding state
+    *Calibration of the lining up state
+    *Calibration of the find middle of goal states
+    
+"""
+
 class Program(general_fsm.StateMachine):
     def __init__(self):
-        #self.robocom = "http://192.168.0.5:5000/"
+        
         """        Create our states_for_darwin        """
         
-        """ movement states_for_darwin """
+        """ Pure movement states """
         _stand_still = states_for_darwin.StandStill()
         _walk_straight = states_for_darwin.WalkSpeed(3)
         _after_kick_walking = states_for_darwin.WalkSpeed(15)
         _initiate_walking = states_for_darwin.WalkSpeed(3,0)
-        _one_step_forward = states_for_darwin.FollowBall(pi,True)
+        
 
-        """ ball interaction states_for_darwin"""
+        """ ball interaction states"""
         _follow_ball = states_for_darwin.FollowBall()
-        _circle_ball_left = states_for_darwin.CrudeGoalAdjusting(1)
-        _track_ball = states_for_darwin.TrackBall()
         _stand_in_front_of_ball = states_for_darwin.FollowBall(2.1)
+        _one_step_forward = states_for_darwin.FollowBall(pi,True)
+        
+        _circle_ball_left = states_for_darwin.CrudeGoalAdjusting(1)
+        
         _kick_ball = states_for_darwin.KickBall()
         _circle_away_from_own_goal = states_for_darwin.CircleBall()
         
-        """ goal interaction states_for_darwin"""
+        
+        """ Tracking states """
+        
+        _track_ball = states_for_darwin.TrackBall()
+
+
+        """ goal interaction states """
+        _check_team_goal = states_for_darwin.CheckTeam()
         _center_goal = states_for_darwin.FindMiddleOfGoal()
         _line_up_shot = states_for_darwin.LineUpShot()
-        _check_team_goal = states_for_darwin.CheckTeam()
         
-        """ system states_for_darwin """
+        """ system states """
         _terminate = states_for_darwin.Exit()
         _get_up = states_for_darwin.GetUp()
         
@@ -39,30 +56,32 @@ class Program(general_fsm.StateMachine):
         
         """        Adding the states_for_darwin        """
         
-        """ motion states_for_darwin """
+        """ pure motion states """
         self.add_state(_stand_still)
         self.add_state(_walk_straight)
         self.add_state(_initiate_walking)
         self.add_state(_one_step_forward)
         self.add_state(_after_kick_walking)
         
-        """ball interaction states_for_darwin"""
+        """ ball interaction states """
         self.add_state(_follow_ball)
         self.add_state(_circle_ball_left)
         self.add_state(_kick_ball)
         self.add_state(_stand_in_front_of_ball)
         self.add_state(_circle_away_from_own_goal)
         
-        """goal interaction states_for_darwin"""
+        """ Tracking states """
+        self.add_state(_track_ball)
+        
+        """ goal interaction states """
         self.add_state(_center_goal)
         self.add_state(_line_up_shot)
         self.add_state(_check_team_goal)
         
-        """ system states_for_darwin """
+        """ system states """
         self.add_state(_terminate)
         self.add_state(_get_up)
-        
-        self.add_state(_track_ball)
+
         
         """        Adding transitions between states_for_darwin        """
         
@@ -70,7 +89,8 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_stand_still,"timeout",_initiate_walking)
         self.add_transition(_initiate_walking, "timeout", _track_ball)
         self.add_transition(_track_ball,"done",_follow_ball)
-        self.add_transition(_follow_ball, "done", _circle_ball_left)
+        self.add_transition(_follow_ball, "done", _circle_away_from_own_goal)
+        #self.add_transition(_follow_ball, "done", _circle_ball_left)
 
         self.add_transition(_circle_ball_left, "done", _center_goal)
         self.add_transition(_circle_ball_left, "fail", _stand_in_front_of_ball)

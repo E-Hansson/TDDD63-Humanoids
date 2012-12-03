@@ -10,11 +10,13 @@ import time
 """        General motion states        """
     
 
+""" Circles approximately, due to the unsteady walking, 180 degrees around the ball """
+
 class CircleBall:
     
     def entry(self):
         self.wanted_rotation=pi
-        walk.set_velocity(0, 0, 0)
+        walk.set_velocity(0, 0.4, 0)
         self.rotation_progress = 0
         self.const_forward_velocity=0.02
         self.forward_velocity=0
@@ -33,13 +35,12 @@ class CircleBall:
         
         
         self.set_new_head_position()
-        if distance_to_ball() > 1.5:
+        if distance_to_ball() > pi*3:
             self.forward_velocity = self.const_forward_velocity;
         else:
                 self.forward_velocity = 0
         
-                walk.set_velocity(self.forward_velocity, 0.4, self.wanted_head_position[0]*1.2)
-                self.rotation_progress -= self.wanted_head_position[0]/12
+                walk.set_velocity(self.forward_velocity, 0.4, ball_angle()[0]*1.2)
         
         if time.time() > self.start_time + self.time:
             print("aiming away from our goal")
@@ -59,7 +60,12 @@ class CircleBall:
         
             self.wanted_head_position[0]=current_ball_angle[0]
             set_head_position(self.wanted_head_position)
-        
+
+
+""" Searches for a goal while walking in a circle around the ball
+    If no goal has been found during, approximately, 360 degrees
+    it kicks the ball anyhow wishing for the best outcome """
+
 class CrudeGoalAdjusting:
     
     def __init__(self,direction):
@@ -127,7 +133,9 @@ class CrudeGoalAdjusting:
                 set_head_position([0,self.timer-self.current_time])
 
 
-#A Simple state to kick the ball, wait some time for the robot to regain it's football
+""" The robot kicks the ball and waits for some time after kicking it
+    to avoid getting in a loop in which it believes it's still in front of the ball """
+
 class KickBall:
     
     def entry(self):
@@ -163,7 +171,12 @@ class KickBall:
     def exit(self):
         print ("kicked the ball")
 
-#A class which follows the ball and stops when the angle of the head is close enough
+
+""" The robot follows the ball until it's close enough.
+    Standard value for how close it will go is two times pi.
+    However, the distance is an optional input as well as
+    the option to force the robot to look at the ground """
+
 class FollowBall:
     
     def __init__(self,distance=2*pi,look_down=False):
@@ -235,6 +248,10 @@ class FollowBall:
             
         set_head_position(self.wanted_head_position)
 
+
+""" A very simple state which makes the robot stand still for some time.
+    Default time is 1 but it can be set with an optional input. """
+
 class StandStill:
     """The robot stands still and wait"""
 
@@ -255,7 +272,8 @@ class StandStill:
         motion.start_walk()
         
 
-#A state to get the robot to stand up after falling
+""" A state that makes the robot stand after it has fallen """
+
 class GetUp:
         
     def entry (self):
@@ -271,7 +289,8 @@ class GetUp:
         robotbody.set_eyes_led(0, 0, 31)
         
 
-"""        Walking states        """
+""" The robot walks forward for some the given time.
+    Optional input is the walking speed which is set to 0.02 by default """
 
 class WalkSpeed:
     """The robot walks forward some time"""
@@ -296,37 +315,30 @@ class WalkSpeed:
         print("Exit walk")
 
 
-"""        Direction states        """
+""" A state which checks which team the goal in the last
+    goal observation belongs to. """
 
 class CheckTeam:
     
     def entry(self):
         print ("checking which goal")
         self.wanted_head_position=[0,0]
-        set_head_position(self.wanted_head_position)
         self.team_id=robotid.get_team_number()
         self.first_turn=True
         
     def update(self):
-        self.current_head_position=robotbody.get_head_position()[0]
         if has_fallen():
             return "fallen"
         
-        
-        if vision.has_new_goal_observation():
-            if self.opponents_goal():
-                robotbody.set_eyes_led(0, 31, 0)
-                print("fire at opponents goal")
-                return "fire"
-            else:
-                robotbody.set_eyes_led(0, 0, 31)
-                print ("turning towards opponents goal")
-                return "turn"
-        
-            self.update_head_position()
-        
-        if like(self.current_head_position,pi/3):
+        if self.opponents_goal():
+            
+            robotbody.set_eyes_led(0, 31, 0)
+            print("fire at opponents goal")
             return "fire"
+        else:
+            robotbody.set_eyes_led(0, 0, 31)
+            print ("turning towards opponents goal")
+            return "turn"
         
     def exit(self):
         pass
@@ -335,18 +347,8 @@ class CheckTeam:
         goal_team_number = vision.get_goal().team
         return not self.team_id==goal_team_number
     
-    def update_head_position(self):
-        if like(self.wanted_head_position[0],self.current_head_position):
-            if like(self.current_head_position,-pi/3):
-                self.wanted_head_position[0]=pi/18
-                self.first_turn=False
-            elif self.first_turn:
-                self.wanted_head_position[0]-=pi/18
-            else:
-                self.wanted_head_position[0]+=pi/18
-            
-            set_head_position(self.wanted_head_position)
-        
+""" The robot adjust it's position around the ball so that the ball is between the robot
+    and the middle of the goal """
             
 class LineUpShot:
     
@@ -403,12 +405,12 @@ class LineUpShot:
             
     def exit(self):
         walk.set_velocity(0, 0, 0)
-"""
 
-Sets the head position to face the middle of the goal if it can find two pillars within 180 degrees.
-Sets the head position to one of the pillar if it can only find one.
-Otherwise calls it a fail.
-"""
+
+""" Sets the head position to face the middle of the goal,
+    if it can find two pillars within 180 degrees.
+    Sets the head position to one of the pillar if itonly can find one.
+    Otherwise calls it a fail. """
 
 class FindMiddleOfGoal:
     
@@ -506,7 +508,11 @@ class FindMiddleOfGoal:
             self.wanted_head_position[0]-=pi/15
         set_head_position(self.wanted_head_position)
 
-#A State to find the goal
+
+""" A state in which the robot tracks the ball over the field.
+    If it can't find the goal while having turned in a, approximately, complete circle
+    it calls out that it can't find the ball and goes to the next state """
+
 class TrackBall:
     
     def __init__(self):
