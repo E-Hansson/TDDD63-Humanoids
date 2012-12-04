@@ -227,10 +227,7 @@ class FollowBall:
                 walk.set_velocity(0, 0, 0)
                 robotbody.set_eyes_led(31, 0, 0)
                 print("lost ball")
-                if ball_angle()[0]>=0:
-                    return "no ball left"
-                else:
-                    return "no ball right"
+                return "lost ball"
                 
         else:
             self.last_observation_of_ball=time.time()
@@ -540,6 +537,20 @@ class FindMiddleOfGoal:
 """ A state in which the robot tracks the ball over the field.
     If it can't find the goal while having turned in a, approximately, complete circle
     it calls out that it can't find the ball and goes to the next state """
+
+class TrackDirection:
+    
+    def entry(self):
+        self.last_ball_angles=ball_angle()[0]
+        
+    def update(self):
+        if self.last_ball_angles>=0:
+            return "left"
+        else:
+            return "right"
+        
+    def exit (self):
+        pass
 
 class TrackBall:
     
