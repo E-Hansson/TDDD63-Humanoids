@@ -52,7 +52,6 @@ class Program(general_fsm.StateMachine):
         _line_up_shot = states_for_darwin.LineUpShot()
         
         """ system states """
-        _terminate = states_for_darwin.Exit()
         _get_up = states_for_darwin.GetUp()
         
         # Initiate the StateMachine, and give it an initial state 
@@ -85,7 +84,6 @@ class Program(general_fsm.StateMachine):
         self.add_state(_check_team_goal)
         
         """ system states """
-        self.add_state(_terminate)
         self.add_state(_get_up)
 
         
