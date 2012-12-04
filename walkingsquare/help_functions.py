@@ -16,8 +16,8 @@ def set_head_position(head_position):
         
     if head_position[1] > pi/8:
         head_position[1] = pi/8
-    elif head_position[1] < -pi/4.5:
-        head_position[1] = -pi/4.5
+    elif head_position[1] < -0.8:
+        head_position[1] = -0.8
         
     robotbody.set_head_position_list(head_position)
 

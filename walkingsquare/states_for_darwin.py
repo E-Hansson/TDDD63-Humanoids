@@ -14,7 +14,7 @@ class CircleBall:
     
     def entry(self):
         self.wanted_rotation=pi
-        walk.set_velocity(0, 0.4, 0)
+        walk.set_velocity(0, 0.2, 0)
         self.rotation_progress = 0
         self.const_forward_velocity=0.02
         self.forward_velocity=0
@@ -23,7 +23,7 @@ class CircleBall:
         set_head_position(self.wanted_head_position)
         
         self.start_time = time.time()
-        self.time = 10
+        self.time = 20
         
         print ("Turning away from our goal")
         
@@ -47,9 +47,9 @@ class CircleBall:
         if distance_to_ball() > pi*3:
             self.forward_velocity = self.const_forward_velocity;
         else:
-                self.forward_velocity = 0
+            self.forward_velocity = 0
         
-                walk.set_velocity(self.forward_velocity, 0.4, ball_angle()[0]*1.2)
+        walk.set_velocity(self.forward_velocity, 0.2, ball_angle()[0]*1.2)
         
         if self.current_time > self.start_time + self.time:
             print("aiming away from our goal")
@@ -81,16 +81,17 @@ class CrudeGoalAdjusting:
         self.direction=direction
         self.forward_velocity=0
         self.const_forward_velocity=0.01
+        self.circling_speed=0.2
         
         #Turning timers
-        self.time = 20
+        self.time = 40
         
     def entry(self):
         print("Looking for a goal")
         
         #HeadTimers
         self.max_angle_timer=pi/8
-        self.min_angle_timer=-pi/9
+        self.min_angle_timer=-0.733
         self.timer=time.time()
         self.up_and_down="up"
         
@@ -127,7 +128,7 @@ class CrudeGoalAdjusting:
         else:
             self.forward_velocity = 0
         
-        walk.set_velocity(self.forward_velocity, 0.4*self.direction, ball_angle()[0]*1.2)
+        walk.set_velocity(self.forward_velocity,self.circling_speed*self.direction, ball_angle()[0]*1.2)
         
         if self.current_time > self.start_time + self.time:
             robotbody.set_eyes_led(0, 0, 31)
@@ -302,14 +303,27 @@ class GetUp:
     def entry (self):
         robotbody.set_eyes_led(31, 0, 0)
         motion.get_up()
+        self.sitting=False
+        self.start_time=0
     
     def update (self):
+        if self.sitting and not self.start_time:
+            self.start_time=time.time()
+            motion.stand_still()
+
         if like(imu.get_angle()[1],0.001):
-            return ("done")
+            self.sitting=True
+        
+        print (str(robotbody.get_head_position()[1]))
+        
+        if self.start_time and time.time()>self.start_time+1:
+            return "done"
     
     def exit (self):
         print ("sitting")
+        motion.start_walk()
         robotbody.set_eyes_led(0, 0, 31)
+        
         
 
 """ The robot walks forward for some the given time.
@@ -443,7 +457,7 @@ class FindMiddleOfGoal:
         robotbody.set_head_hardness(0.95)
         self.current_head_position=robotbody.get_head_position()
         
-        self.wanted_head_position=[-pi/2,-pi/16]
+        self.wanted_head_position=[-pi/2,-0.733]
         set_head_position(self.wanted_head_position)
            
         self.ending=False
@@ -560,6 +574,9 @@ class TrackBall:
         self.time_between=1
         self.direction=direction
         
+        self.highest_head_position=-0.733
+        self.lowest_head_position=pi/8
+        
     def entry(self):
         print("Tracking ball")
         robotbody.set_head_hardness(0.95)
@@ -604,7 +621,7 @@ class TrackBall:
         if self.left_or_right=="left":
             if self.current_time>=self.timer+self.max_time_difference:
                 self.timer=self.current_time+self.max_time_difference
-                self.wanted_head_position[1]=0
+                self.wanted_head_position[1]=self.highest_head_position
                 self.left_or_right="right"
             else:
                 self.wanted_head_position[0]=self.current_time-self.timer
@@ -612,7 +629,7 @@ class TrackBall:
         else:
             if self.current_time>=self.timer+self.max_time_difference:
                 self.timer=self.current_time+self.max_time_difference
-                self.wanted_head_position[1]=pi/8
+                self.wanted_head_position[1]=self.lowest_head_position
                 self.left_or_right="left"
             else:
                 self.wanted_head_position[0]=-(self.current_time-self.timer)
