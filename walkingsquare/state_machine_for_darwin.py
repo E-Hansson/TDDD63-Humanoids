@@ -23,7 +23,7 @@ class Program(general_fsm.StateMachine):
 
         """ ball interaction states"""
         _follow_ball = states_for_darwin.FollowBall()
-        _stand_in_front_of_ball = states_for_darwin.FollowBall(pi,True)
+        _stand_in_front_of_ball = states_for_darwin.FollowBall(2.1,True)
         
         _finding_the_goal = states_for_darwin.CrudeGoalAdjusting(1)
         

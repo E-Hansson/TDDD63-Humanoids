@@ -27,7 +27,7 @@ def update():
     _program.update()
     motion.update()
     #robotbody.update()
-    vision.update()
+    #vision.update()
     #opener = urllib2.build_opener()
     #opener.addheaders = [('User-agent', 'Bawlinator')]
     #infile = opener.open(_program.robocom)
@@ -35,11 +35,11 @@ def update():
     #print(page)
 
 
-vision.entry()
+#vision.entry()
 # Main loop
 while not robotbody.is_middle_button_pressed():
     update()
     time.sleep(_tDelay)
-    vision.update()
+    #vision.update()
     
-vision.exit()
+#vision.exit()
