@@ -1,7 +1,6 @@
 from Robot.StateMachines import general_fsm
 import states_for_darwin
 from math import pi
-import states_for_darwin 
 
 """ 
 
@@ -9,31 +8,23 @@ import states_for_darwin
     *Calibration of the goal finding state
     *Calibration of the lining up state
     *Calibration of the find middle of goal states
-    *Test if it is possible to remove the _one_step_forward state
-    and replace it by setting it's input to the _stand_in_front_of_ball state
-    *Test if it works without the initiate walking state
-    *Make the robot check so that it is still in posession of the ball
-    *Make the robot turn right if the ball leaves to the right while tracking
-    *The same as above but for left.
     
 """
 
 class Program(general_fsm.StateMachine):
     def __init__(self):
         
-        """        Create our states_for_darwin        """
+        """        Create our states        """
         
         """ Pure movement states """
         _stand_still = states_for_darwin.StandStill()
         _walk_straight = states_for_darwin.WalkSpeed(3)
         _after_kick_walk = states_for_darwin.WalkSpeed(15)
-        #_initiate_walking = states_for_darwin.WalkSpeed(3,0)
         
 
         """ ball interaction states"""
         _follow_ball = states_for_darwin.FollowBall()
-        _stand_in_front_of_ball = states_for_darwin.FollowBall(2.1)
-        _one_step_forward = states_for_darwin.FollowBall(pi,True)
+        _stand_in_front_of_ball = states_for_darwin.FollowBall(pi,True)
         
         _finding_the_goal = states_for_darwin.CrudeGoalAdjusting(1)
         
@@ -43,7 +34,8 @@ class Program(general_fsm.StateMachine):
         
         """ Tracking states """
         
-        _track_ball = states_for_darwin.TrackBall()
+        _track_ball_left = states_for_darwin.TrackBall("left")
+        _track_ball_right = states_for_darwin.TrackBall("right")
 
 
         """ goal interaction states """
@@ -54,18 +46,14 @@ class Program(general_fsm.StateMachine):
         """ system states """
         _get_up = states_for_darwin.GetUp()
         
-        # Initiate the StateMachine, and give it an initial state 
-        #super(Program, self).__init__(_stand_still)
-        super(Program, self).__init__(_stand_still)
+
+        super(Program, self).__init__(_get_up)
         
-        
-        """        Adding the states_for_darwin        """
+        """        Adding the darwin        """
         
         """ pure motion states """
         self.add_state(_stand_still)
         self.add_state(_walk_straight)
-        #self.add_state(_initiate_walk)
-        self.add_state(_one_step_forward)
         self.add_state(_after_kick_walk)
         
         """ ball interaction states """
@@ -76,7 +64,8 @@ class Program(general_fsm.StateMachine):
         self.add_state(_circle_away_from_own_goal)
         
         """ Tracking states """
-        self.add_state(_track_ball)
+        self.add_state(_track_ball_left)
+        self.add_state(_track_ball_right)
         
         """ goal interaction states """
         self.add_state(_center_goal)
@@ -87,13 +76,12 @@ class Program(general_fsm.StateMachine):
         self.add_state(_get_up)
 
         
-        """        Adding transitions between states_for_darwin        """
+        """        Adding transitions between darwin        """
         
         """ if everything goes well transitions """
-        #self.add_transition(_stand_still,"timeout",_initiate_walking)
-        #self.add_transition(_initiate_walking, "timeout", _track_ball)
-        self.add_transition(_stand_still, "timeout", _track_ball)
-        self.add_transition(_track_ball,"done",_follow_ball)
+        self.add_transition(_stand_still, "timeout", _track_ball_left)
+        self.add_transition(_track_ball_left,"done",_follow_ball)
+        self.add_transition(_track_ball_right, "done", _follow_ball)
         self.add_transition(_follow_ball, "done", _finding_the_goal)
 
         self.add_transition(_finding_the_goal, "done", _center_goal)
@@ -107,36 +95,40 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_line_up_shot, "lined up", _check_team_goal)
         
         self.add_transition(_check_team_goal, "fire", _stand_in_front_of_ball)
-        self.add_transition(_stand_in_front_of_ball, "done", _one_step_forward)
-        self.add_transition(_one_step_forward, "done", _kick_ball)
+        self.add_transition(_stand_in_front_of_ball, "done", _kick_ball)
         self.add_transition(_kick_ball, "done", _after_kick_walk)
-        self.add_transition(_after_kick_walk, "timeout", _track_ball)
+        self.add_transition(_after_kick_walk, "timeout", _track_ball_left)
         
         self.add_transition(_check_team_goal, "turn", _circle_away_from_own_goal)
         self.add_transition(_circle_away_from_own_goal, "done", _stand_in_front_of_ball)
         
         
-        self.add_transition(_walk_straight, "timeout", _track_ball)
+        self.add_transition(_walk_straight, "timeout", _track_ball_left)
 
         """ Lost ball transitions """
-        self.add_transition(_follow_ball, "no ball", _track_ball)
-        self.add_transition(_stand_in_front_of_ball, "no ball", _track_ball)
-        self.add_transition(_line_up_shot, "lost ball", _track_ball)
-        self.add_transition(_one_step_forward, "no ball", _track_ball)
-        self.add_transition(_track_ball, "out of sight", _walk_straight)
+        self.add_transition(_follow_ball, "no ball right", _track_ball_right)
+        self.add_transition(_follow_ball, "no ball left", _track_ball_left)
+        self.add_transition(_stand_in_front_of_ball, "no ball left", _track_ball_left)
+        self.add_transition(_stand_in_front_of_ball, "no ball right", _track_ball_right)
+        self.add_transition(_line_up_shot, "lost ball", _track_ball_left)
+        self.add_transition(_circle_away_from_own_goal, "lost ball", _track_ball_left)
+        self.add_transition(_finding_the_goal, "lost ball", _track_ball_left)
+        self.add_transition(_track_ball_left, "out of sight", _walk_straight)
+        self.add_transition(_track_ball_right, "out of sight", _walk_straight)
 
 
         """ Falling transitions """
         self.add_transition(_circle_away_from_own_goal, "fallen", _get_up)
-        self.add_transition(_one_step_forward, "fallen", _get_up)
         self.add_transition(_check_team_goal, "fallen", _get_up)
         self.add_transition(_kick_ball, "fallen", _get_up)
         self.add_transition(_line_up_shot, "fallen", _line_up_shot)
         self.add_transition(_finding_the_goal, "fallen", _get_up)
         self.add_transition(_stand_in_front_of_ball, "fallen", _get_up)
-        self.add_transition(_track_ball, "fallen", _get_up)
+        self.add_transition(_track_ball_left, "fallen", _get_up)
+        self.add_transition(_track_ball_right, "fallen", _get_up)
         self.add_transition(_follow_ball, "fallen", _get_up)
         self.add_transition(_stand_still, "fallen", _get_up)
-        #self.add_transition(_initiate_walking, "fallen", _get_up)
+        self.add_transition(_center_goal, "fallen", _get_up)
+        self.add_transition(_after_kick_walk, "fallen", _get_up)
         self.add_transition(_walk_straight, "fallen", _get_up)
         self.add_transition(_get_up, "done", _stand_still)
