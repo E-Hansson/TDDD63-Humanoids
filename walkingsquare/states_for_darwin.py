@@ -27,11 +27,22 @@ class CircleBall:
         
         print ("Turning away from our goal")
         
+        self.lost_ball_timer=time.time()+5
+        
     def update(self):
         if has_fallen():
             return "fallen"
         
+        self.current_time=time.time()
         
+        if self.current_time>=self.lost_ball_timer:
+            robotbody.set_eyes_led(31, 0, 0)
+            print ("lost the ball")
+            return "lost ball"
+        
+        elif vision.has_new_ball_observation():
+            self.lost_ball_timer=self.current_time()
+            
         self.set_new_head_position()
         if distance_to_ball() > pi*3:
             self.forward_velocity = self.const_forward_velocity;
@@ -40,7 +51,7 @@ class CircleBall:
         
                 walk.set_velocity(self.forward_velocity, 0.4, ball_angle()[0]*1.2)
         
-        if time.time() > self.start_time + self.time:
+        if self.current_time > self.start_time + self.time:
             print("aiming away from our goal")
             return "done"
         
@@ -86,6 +97,9 @@ class CrudeGoalAdjusting:
         #Turning timers
         self.start_time = self.timer
         
+        #Lost ball timer
+        self.lost_ball_timer=self.timer+5
+        
     def update(self):
         
         if has_fallen():
@@ -95,7 +109,16 @@ class CrudeGoalAdjusting:
                 robotbody.set_eyes_led(0, 31, 0)
                 print("found goal")
                 return "done"
-
+            
+        self.current_time=time.time()
+        
+        if self.current_time>=self.lost_ball_timer:
+            robotbody.set_eyes_led(31, 0, 0)
+            print ("lost the ball")
+            return "lost ball"
+        
+        if vision.has_new_ball_observation():
+            self.lost_ball_timer=self.current_time+5
         
         self.update_head_position()
         
@@ -106,7 +129,7 @@ class CrudeGoalAdjusting:
         
         walk.set_velocity(self.forward_velocity, 0.4*self.direction, ball_angle()[0]*1.2)
         
-        if time.time() > self.start_time + self.time:
+        if self.current_time > self.start_time + self.time:
             robotbody.set_eyes_led(0, 0, 31)
             print("lucky shot")
             return "fail"
@@ -115,7 +138,6 @@ class CrudeGoalAdjusting:
         walk.set_velocity(0, 0, 0)
         
     def update_head_position(self):
-        self.current_time=time.time()
         if self.up_and_down=="down":
             if self.current_time>=self.timer+self.max_angle_timer:
                 self.timer=self.current_time+self.max_angle_timer
@@ -202,16 +224,22 @@ class FollowBall:
         
         if not vision.has_new_ball_observation():
             if self.last_observation_of_ball+5<time.time():
-                walk.set_velocity(self.speed, 0, 0)
+                walk.set_velocity(0, 0, 0)
                 robotbody.set_eyes_led(31, 0, 0)
                 print("lost ball")
-                return "no ball"
-    
+                if ball_angle()[0]>=0:
+                    return "no ball left"
+                else:
+                    return "no ball right"
+                
+        else:
+            self.last_observation_of_ball=time.time()
+        
         self.current_head_position = robotbody.get_head_position()
         
         self.update_head_position()
            
-        self.last_observation_of_ball=time.time()
+        
         self.last_distance=distance_to_ball()
             
         if self.last_distance>0 and self.last_distance<self.distance:
@@ -220,7 +248,7 @@ class FollowBall:
             return "done"
                 
         if not like(self.current_head_position[0],0,pi/18):
-            walk.set_velocity(self.speed, 0.4, self.current_head_position[0])
+            walk.set_velocity(self.speed,0.4,self.current_head_position[0])
                 
         else:
             walk.set_velocity(self.speed, 0, 0)
@@ -359,7 +387,7 @@ class LineUpShot:
         set_head_position(self.wanted_head_position)
         
         self.timer=None
-        self.lost_ball_timer=time.time()+10
+        self.lost_ball_timer=time.time()+5
         
         self.first_ball_angle=None
         self.last_ball_angle=None
@@ -425,6 +453,7 @@ class FindMiddleOfGoal:
         
         self.numbers_of_observation=0
         self.angles=[]
+        self.fail_timer=time.time()+5
         
         print ("searching for goal")
         
@@ -432,6 +461,10 @@ class FindMiddleOfGoal:
         self.current_head_position=robotbody.get_head_position()
         if has_fallen():
             return "fallen"
+        if self.fail_timer<=time.time():
+            robotbody.set_eyes_led(31, 0, 0)
+            print("fail")
+            return "fail"
         
         if like(self.wanted_head_position,self.current_head_position):
 
@@ -443,12 +476,9 @@ class FindMiddleOfGoal:
                 if vision.has_new_goal_observation():
                     self.get_goal_observation()
                     self.searching_for_next()
+                    self.fail_timer=time.time()+5
                     print("got first observation")
-                    
-                elif like(self.current_head_position[0],pi/2):
-                    robotbody.set_eyes_led(31, 0, 0)
-                    print("fail")
-                    return "fail"
+
                 
                 else:
                     self.set_next_head_position()
@@ -513,11 +543,12 @@ class FindMiddleOfGoal:
 
 class TrackBall:
     
-    def __init__(self):
+    def __init__(self,direction):
         self.max_time_difference=pi/3
         self.angle=2*pi
         self.time_between=1
-    
+        self.direction=direction
+        
     def entry(self):
         print("Tracking ball")
         robotbody.set_head_hardness(0.95)
@@ -530,7 +561,11 @@ class TrackBall:
         
         self.left_or_right="right"
         
-        walk.turn_left(0.2)
+        if self.direction=="left":
+            walk.turn_left(0.2)
+        else:
+            walk.turn_right(0.2)
+            
         set_head_position(self.wanted_head_position)
         
     def update(self):
