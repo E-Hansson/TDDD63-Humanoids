@@ -23,7 +23,7 @@ class Program(general_fsm.StateMachine):
 
         """ ball interaction states"""
         _follow_ball = states_for_darwin.FollowBall()
-        _stand_in_front_of_ball = states_for_darwin.FollowBall(2.1,True)
+        _stand_in_front_of_ball = states_for_darwin.FollowBall(2,True)
         
         _finding_the_goal = states_for_darwin.CrudeGoalAdjusting(1)
         
@@ -118,16 +118,16 @@ class Program(general_fsm.StateMachine):
 
 
         """ Falling transitions """
-        self.add_transition(_circle_away_from_own_goal, "fallen", _get_up)
-        self.add_transition(_check_team_goal, "fallen", _get_up)
-        self.add_transition(_kick_ball, "fallen", _get_up)
-        self.add_transition(_line_up_shot, "fallen", _line_up_shot)
-        self.add_transition(_finding_the_goal, "fallen", _get_up)
+        self.add_transition(_walk_straight, "fallen", _get_up)
+        self.add_transition(_after_kick_walk, "fallen", _get_up)
+        self.add_transition(_follow_ball, "fallen", _get_up)
         self.add_transition(_stand_in_front_of_ball, "fallen", _get_up)
+        self.add_transition(_finding_the_goal, "fallen", _get_up)
+        self.add_transition(_kick_ball, "fallen", _get_up)
+        self.add_transition(_circle_away_from_own_goal, "fallen", _get_up)
         self.add_transition(_track_ball_left, "fallen", _get_up)
         self.add_transition(_track_ball_right, "fallen", _get_up)
-        self.add_transition(_follow_ball, "fallen", _get_up)
+        self.add_transition(_check_team_goal, "fallen", _get_up)
         self.add_transition(_center_goal, "fallen", _get_up)
-        self.add_transition(_after_kick_walk, "fallen", _get_up)
-        self.add_transition(_walk_straight, "fallen", _get_up)
+        self.add_transition(_line_up_shot, "fallen", _line_up_shot)
         self.add_transition(_get_up, "done", _track_ball_left)
