@@ -3,7 +3,7 @@ from Robot.Interface import robotbody
 from Robot.Actions import motion, walk, kick
 from Robot.Util import robotid
 from help_functions import *
-from math import pi, fabs, tan
+from math import pi, fabs
 
 import time
     
@@ -97,7 +97,7 @@ class CircleBall:
 class CrudeGoalAdjusting:
     
     def __init__(self,direction):
-        #Initiates the consta variables
+        #Initiates the constant variables
         self.direction=direction
         self.forward_velocity=0
         self.const_forward_velocity=0.01
@@ -132,8 +132,11 @@ class CrudeGoalAdjusting:
         #Stores the current time for further tests
         self.current_time=time.time()
         
+        #Stores the current distance to the ball for further tests
+        self.distance_to_ball=distance_to_ball()
+        
         #Tests if it has lost the ball
-        if self.has_lost_ball():
+        if self.has_lost_ball() or self.to_long_distance():
             print ("lost the ball")
             return "lost ball"
         
@@ -194,7 +197,6 @@ class CrudeGoalAdjusting:
     #A method that updates which forward speed the robot should use
     #depending on the distance to the ball
     def update_speed(self):
-        self.distance_to_ball=distance_to_ball()
         if self.distance_to_ball> pi*3:
             self.forward_velocity = self.const_forward_velocity;
         elif self.distance_to_ball< pi and self.distance_to_ball>0:
@@ -203,6 +205,10 @@ class CrudeGoalAdjusting:
             self.forward_velocity = 0
             
         walk.set_velocity(self.forward_velocity, self.circling_velocity, ball_angle()[0])
+        
+    def to_long_distance(self):
+        
+        return self.distance_to_ball>20
 
 
 """ The robot kicks the ball and waits for some time after kicking it
@@ -275,8 +281,12 @@ class FollowBall:
     def __init__(self,distance=2*pi,look_down=False):
         #Sets the constant variables for the state
         self.distance=distance
-        self.speed=0.02
         self.look_down=look_down
+        
+        if self.look_down:
+            self.speed=0.02
+        else:
+            self.speed=0.04
         
     #FSM methods
     def entry(self):
@@ -414,7 +424,7 @@ class GetUp:
 class WalkSpeed:
     """The robot walks forward some time"""
 
-    def __init__(self, time, speed = 0.02):
+    def __init__(self, time, speed = 0.04):
         #initiates the constant variables
         self.time = time
         self.speed = speed
@@ -507,7 +517,7 @@ class LineUpShot:
         set_head_position(self.wanted_head_position)
         
         #Makes the robot stand still since it shouldn't move during while looking
-        walk.set_velocity(-0.01,0,0)
+        walk.set_velocity(-0.04,0,0)
         
         print("lining up...")
         
@@ -570,14 +580,14 @@ class LineUpShot:
             self.lost_ball_timer=self.current_time+5
         
         #Updates the head position
-        self.last_ball_angle=ball_angle
+        self.last_ball_angle=ball_angle()
         set_head_position(self.last_ball_angle)
         
         #Updates the walking
         if self.first_ball_angle<0:
-            walk.set_velocity(-0.01, -0.4, self.last_ball_angle)
+            walk.set_velocity(-0.04, -0.4, self.last_ball_angle)
         else:
-            walk.set_velocity(-0.01, 0.4, self.last_ball_angle)
+            walk.set_velocity(-0.04, 0.4, self.last_ball_angle)
         
     #The test that decides if it has lost the ball
     #and a test that updates the lost ball timer if it has a new observation
@@ -609,7 +619,7 @@ class FindMiddleOfGoal:
         #Resets all the variables:
         
         #The wanted head position
-        self.wanted_head_position=[-pi/2,-0.733]
+        self.wanted_head_position=[-pi/3,-0.733]
         
         #The angles it has found to the goal
         self.angles=[]
@@ -626,6 +636,9 @@ class FindMiddleOfGoal:
         #updates the position of the head
         robotbody.set_head_hardness(0.95)  
         set_head_position(self.wanted_head_position)
+        
+        #Sets the walk speed to the actually zero
+        walk.set_velocity(-0.04, 0, 0)
 
         print ("searching for goal")
         
@@ -706,7 +719,7 @@ class FindMiddleOfGoal:
     #Sets the head to search for the next goal post
     #by moving the head from left to right instead of right to left.
     def searching_for_next(self):
-        self.wanted_head_position=[pi/2,-0.733]
+        self.wanted_head_position=[pi/3,-0.733]
         set_head_position(self.wanted_head_position)
     
     #Sets the head position to the middle of the two goal post it has found
@@ -827,6 +840,9 @@ class TrackBall:
             walk.turn_left(0.2)
         else:
             walk.turn_right(0.2)
+            
+        #Sets a fancy blue eye colour
+        robotbody.set_eyes_led(0, 0, 31)
             
         print("Tracking ball")
         

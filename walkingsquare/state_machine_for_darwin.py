@@ -1,6 +1,5 @@
 from Robot.StateMachines import general_fsm
 import states_for_darwin
-from math import pi
 
 """ 
 
@@ -18,7 +17,6 @@ class Program(general_fsm.StateMachine):
         
         """ Pure movement states """
         _walk_straight = states_for_darwin.WalkSpeed(3)
-        _after_kick_walk = states_for_darwin.WalkSpeed(15)
         
 
         """ ball interaction states"""
@@ -53,7 +51,6 @@ class Program(general_fsm.StateMachine):
         
         """ pure motion states """
         self.add_state(_walk_straight)
-        self.add_state(_after_kick_walk)
         
         """ ball interaction states """
         self.add_state(_follow_ball)
@@ -95,8 +92,7 @@ class Program(general_fsm.StateMachine):
         
         self.add_transition(_check_team_goal, "fire", _stand_in_front_of_ball)
         self.add_transition(_stand_in_front_of_ball, "done", _kick_ball)
-        self.add_transition(_kick_ball, "done", _after_kick_walk)
-        self.add_transition(_after_kick_walk, "timeout", _track_ball_left)
+        self.add_transition(_kick_ball, "done", _track_direction)
         
         self.add_transition(_check_team_goal, "turn", _circle_away_from_own_goal)
         self.add_transition(_circle_away_from_own_goal, "done", _stand_in_front_of_ball)
@@ -119,7 +115,6 @@ class Program(general_fsm.StateMachine):
 
         """ Falling transitions """
         self.add_transition(_walk_straight, "fallen", _get_up)
-        self.add_transition(_after_kick_walk, "fallen", _get_up)
         self.add_transition(_follow_ball, "fallen", _get_up)
         self.add_transition(_stand_in_front_of_ball, "fallen", _get_up)
         self.add_transition(_finding_the_goal, "fallen", _get_up)
