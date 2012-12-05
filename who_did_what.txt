@@ -10,4 +10,5 @@ general bug fixing concerning the forward
 
 Erik: the "fine" tuned goalfinding, ball tracking, following ball,
 the not completed goal keeper, changing code from only webot to darwin,
-kicking the ball, bug fixing
+kicking the ball, bug fixing, porting most of the code to darwin,
+cleaning the code, wirting technical overview
