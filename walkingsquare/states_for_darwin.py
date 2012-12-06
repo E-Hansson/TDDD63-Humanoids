@@ -34,7 +34,7 @@ class CircleBall:
         self.time = 10
         
         #starting the lost ball timer
-        self.lost_ball_timer=time.time()+7
+        self.lost_ball_timer=time.time()+5
         
         print ("Turning away from our goal")
         
@@ -70,7 +70,7 @@ class CircleBall:
             return True
         
         elif vision.has_new_ball_observation():
-            self.lost_ball_timer=self.current_time+7
+            self.lost_ball_timer=self.current_time+5
             return False
         
         else:
@@ -105,11 +105,11 @@ class CrudeGoalAdjusting:
         self.slow_circling_speed=0.02
         self.max_angle_timer=pi/8
         self.min_angle_timer=-0.733
-        self.alowed_angled_diff=pi/90
-        self.slow_down_time=pi/45
+        self.alowed_angled_diff=pi/45
+        self.slow_down_time=pi/36
         
         #Turning timers
-        self.time = 40
+        self.time = 20
         
     def entry(self):
         #Reseting the variables from the last use of the state:
@@ -125,7 +125,7 @@ class CrudeGoalAdjusting:
         self.circling_velocity=self.constant_circling_speed
         
         #Lost ball timer
-        self.lost_ball_timer=self.timer+7
+        self.lost_ball_timer=self.timer+5
         
         print("Looking for a goal")
         
@@ -199,7 +199,7 @@ class CrudeGoalAdjusting:
             return True
         
         if self.has_new_ball_observation:
-            self.lost_ball_timer=self.current_time+7
+            self.lost_ball_timer=self.current_time+5
         
         return False
     
@@ -215,7 +215,6 @@ class CrudeGoalAdjusting:
         
         if like(goal_angle()[0],0,self.slow_down_time):
             self.circling_velocity=self.slow_circling_speed
-            self.timer=self.current_time+20
             
         walk.set_velocity(self.forward_velocity, self.circling_velocity, ball_angle()[0])
         
@@ -520,7 +519,7 @@ class LineUpShot:
         self.last_ball_angle=None
         
         #The lost ball timer
-        self.lost_ball_timer=time.time()+7
+        self.lost_ball_timer=time.time()+5
         
         #Makes sure that the head hardness is right and sets the
         #wanted head position to the same as last by looking down at the ball
@@ -530,7 +529,7 @@ class LineUpShot:
         set_head_position(self.wanted_head_position)
         
         #Makes the robot stand still since it shouldn't move during while looking
-        walk.set_velocity(0,0,0)
+        walk.set_velocity(-0.002,0,0)
         
         print("lining up...")
         
@@ -585,7 +584,7 @@ class LineUpShot:
     def start_timer(self):
         self.first_ball_angle=ball_angle()[0]
         self.timer=self.current_time+20*fabs(self.first_ball_angle)/(2*pi)
-        self.lost_ball_timer=self.current_time+7
+        self.lost_ball_timer=self.current_time+5
     
     #Starts the turning or updates the turning depending on if it has
     #already been started
@@ -597,9 +596,9 @@ class LineUpShot:
         
         #Updates the walking
         if self.first_ball_angle<0:
-            walk.set_velocity(0, -0.2, self.last_ball_angle[0])
+            walk.set_velocity(-0.002, -0.2, self.last_ball_angle[0])
         else:
-            walk.set_velocity(0, 0.2, self.last_ball_angle[0])
+            walk.set_velocity(-0.002, 0.2, self.last_ball_angle[0])
         
     #The test that decides if it has lost the ball
     #and a test that updates the lost ball timer if it has a new observation
@@ -609,7 +608,7 @@ class LineUpShot:
             return True
         
         elif vision.has_new_ball_observation():
-            self.lost_ball_timer=self.current_time+7
+            self.lost_ball_timer=self.current_time+5
             return False
         
         else:
@@ -637,7 +636,7 @@ class FindMiddleOfGoal:
         self.angles=[]
         
         #The fail timer
-        self.fail_timer=time.time()+7
+        self.fail_timer=time.time()+5
         
         #A couple of boolean variables to help the robot
         #through the different states of finding the two goal post
