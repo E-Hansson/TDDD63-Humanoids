@@ -104,6 +104,7 @@ class CrudeGoalAdjusting:
         self.circling_velocity=0.2
         self.max_angle_timer=pi/8
         self.min_angle_timer=-0.733
+        self.alowed_angled_diff=pi/6
         
         #Turning timers
         self.time = 20
@@ -142,7 +143,7 @@ class CrudeGoalAdjusting:
         
         #Test if it has found a goal post
         if vision.has_new_goal_observation():
-            if like(goal_angle()[0],0,pi/6):
+            if like(goal_angle()[0],0,self.alowed_angled_diff):
                 robotbody.set_eyes_led(0, 31, 0)
                 print("found goal")
                 return "done"
@@ -568,7 +569,7 @@ class LineUpShot:
     #Also updates the lost ball timer
     def start_timer(self):
         self.first_ball_angle=ball_angle()[0]
-        self.timer=time.time()+fabs(self.first_ball_angle)*10
+        self.timer=time.time()+20*fabs(self.first_ball_angle)/(2*pi)
         self.lost_ball_timer=self.current_time+5
     
     #Starts the turning or updates the turning depending on if it has

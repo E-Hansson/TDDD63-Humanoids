@@ -3,7 +3,6 @@
 from math import fabs,pi,tan
 from Robot.Interface import robotbody
 from Robot.Interface.Sensors import imu,vision
-from Robot.Actions import walk
 from Robot.Util import robotid
 
 
