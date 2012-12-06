@@ -124,5 +124,5 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_track_ball_right, "fallen", _get_up)
         self.add_transition(_check_team_goal, "fallen", _get_up)
         self.add_transition(_center_goal, "fallen", _get_up)
-        self.add_transition(_line_up_shot, "fallen", _line_up_shot)
+        self.add_transition(_line_up_shot, "fallen", _get_up)
         self.add_transition(_get_up, "done", _track_ball_left)
