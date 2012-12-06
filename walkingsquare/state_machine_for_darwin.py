@@ -83,7 +83,7 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_finding_the_goal, "done", _center_goal)
         self.add_transition(_finding_the_goal, "fail", _stand_in_front_of_ball)
         
-        self.add_transition(_center_goal, "fail", _center_goal)
+        self.add_transition(_center_goal, "fail", _finding_the_goal)
         self.add_transition(_center_goal, "focus middle", _line_up_shot)
         self.add_transition(_center_goal, "focus one",_check_team_goal)
         
