@@ -50,6 +50,7 @@ class Program(general_fsm.StateMachine):
         """        Adding transitions between darwin        """
         
         """ if everything goes well transitions """
+        self.add_transition(_track_ball, "done", _follow_ball)
         self.add_transition(_follow_ball, "done", _finding_the_goal)
         self.add_transition(_finding_the_goal, "done", _stand_in_front_of_ball)
         self.add_transition(_stand_in_front_of_ball, "done", _kick_ball)

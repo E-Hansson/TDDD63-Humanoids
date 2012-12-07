@@ -32,10 +32,18 @@ def distance_to_ball():
 def goal_angle():
     
     last_goal = vision.get_goal()
-    goal = vision.Goal(last_goal.x,last_goal.y,last_goal.z,last_goal.t,robotid.get_team_number())
+    goal = vision.Goal(last_goal.x,last_goal.y,last_goal.z,last_goal.t,robotid.get_team_number(),last_goal.goal_type)
     angles=goal.get_angle()
     return angles
 
+#Returns the type
+#0=unknown post
+#1=left goal post
+#2=right goal post
+#3=whole goal
+def goal_type():
+    
+    return vision.get_goal().goal_type
 
 # Returns the angles to the ball in relation to imu
 def ball_angle():

@@ -13,11 +13,11 @@ class Program(general_fsm.StateMachine):
         
         _walk_straight = track_ball_states.WalkSpeed(3)
         
-        _done=track_ball_states.Done()
+        self._done=track_ball_states.Done()
         
         super(Program, self).__init__(_track_direction)
         
-        self.add_state(_done)
+        self.add_state(self._done)
         self.add_state(_walk_straight)
         self.add_state(_track_ball_left)
         self.add_state(_track_ball_right)
@@ -29,11 +29,13 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_track_direction, "left", _track_ball_left)
         self.add_transition(_walk_straight, "timeout", _track_direction)
         
-        self.add_transition(_track_ball_right, "done", _done)
-        self.add_transition(_track_ball_left, "done", _done)
+        self.add_transition(_track_ball_right, "done", self._done)
+        self.add_transition(_track_ball_left, "done", self._done)
         
     def update(self):
         if has_fallen():
             return "fallen"
         if self.get_state()==self._done:
             return "done"
+        
+        super(Program,self).update()

@@ -1,4 +1,4 @@
-from time import time
+import time
 from Robot.Interface import robotbody
 from Robot.Actions import walk
 from help_functions import ball_angle, set_head_position

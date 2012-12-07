@@ -3,7 +3,7 @@ from Robot.Interface.Sensors import vision
 from Robot.Actions import motion
 from Robot.Util import robotid
 import time
-"""
+
 #Imports the right state machine for the robots position depending on the number
 
 if robotid.get_player_number() in (1,2,3):
@@ -38,13 +38,19 @@ while not robotbody.is_middle_button_pressed():
     
 vision.exit()
 """
-from help_funtions import ball_angle, set_head_position
+from help_functions import ball_angle, set_head_position
 from math import pi
 
 robotbody.set_head_hardness(0.95)
 set_head_position([0,pi/8])
+motion.stand_still()
+vision.entry()
+#0.47 left foot
+#-0.47 right foot
 while not robotbody.is_middle_button_pressed():
     motion.update()
     vision.update()
     print (ball_angle())
     
+vision.exit()
+"""

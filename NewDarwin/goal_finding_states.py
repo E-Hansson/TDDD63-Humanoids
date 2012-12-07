@@ -1,8 +1,8 @@
 from math import pi
-from help_functions import set_head_position,like,goal_angle, ball_angle, distance_to_ball
+from help_functions import set_head_position,like,goal_angle, ball_angle, distance_to_ball, goal_type
 from Robot.Interface import robotbody
 from Robot.Actions import walk
-from time import time
+import time
 from Robot.Interface.Sensors import vision, imu
 from Robot.Util import robotid
 
@@ -11,7 +11,7 @@ from Robot.Util import robotid
 class LookingForFirstObservation:
     
     def __init__(self):
-        self.max_angles=pi/3
+        self.max_angles=pi/3+0.1
         self.time_between=1
         self.highest_head_position=-0.733
     
@@ -30,6 +30,8 @@ class LookingForFirstObservation:
         
         robotbody.set_eyes_led(0,0,31)
         
+        self.last_goal_observation=None
+        
     def update(self):
         
         self.current_time=time.time()
@@ -40,16 +42,32 @@ class LookingForFirstObservation:
         
         else:
             self.last_goal_observation=self.has_new_goal_observation()
-        
+
             if self.last_goal_observation=="post":
                 self.move_head_timer=0.1
             elif self.last_goal_observation=="whole right":
                 print ("found goal")
                 return "whole right"
-            elif self.last_goal_pbservation=="while left":
+            elif self.last_goal_observation=="whole left":
                 print ("found goal")
                 return "whole left"
+            
+            elif self.last_goal_observation=="left post, adjust left":
+                print("found left post")
+                return "left left"
+            
+            elif self.last_goal_observation=="left post, adjust right":
+                print("found left post")
+                return "left right"
+            
+            elif self.last_goal_observation=="right post, adjust left":
+                print("found right post")
+                return "right left"
         
+            elif self.last_goal_observation=="right post, adjust right":
+                print("found right post")
+                return "right right"
+            
             elif self.update_head_position():
                 print("couldn't find anything")
                 return "nothing"
@@ -69,15 +87,30 @@ class LookingForFirstObservation:
         
     def has_new_goal_observation(self):
         if vision.has_new_goal_observation():
-            if POST:
-                self.wanted_head_position=goal_angle()
-                set_head_position(self.wanted_head_position)
-                return "post"
-            elif WHOLE:
+            self.goal_type=goal_type()
+            print (str(self.goal_type) + "      :       " + str(goal_angle()[0]))
+            if self.goal_type==3:
                 if goal_angle()[0]>=0:
                     return "whole right"
                 else:
                     return "whole left"
+            
+            elif self.goal_type==1:
+                if goal_angle()[0]<=0:
+                    return "left post, adjust left"
+                else:
+                    return "left post, adjust right"
+            
+            elif self.goal_type==2:
+                if goal_angle()[0]<=0:
+                    return "right post, adjust left"
+                else:
+                    return "right post, adjust right"
+                
+            else:
+                self.wanted_head_position=list(goal_angle())
+                set_head_position(self.wanted_head_position)
+                return "post"
         else:
             return "none"
 
@@ -168,14 +201,14 @@ class CircleBall:
 """ circles towards the middle of the goal """
 class AdjustPosition:
     
-    def __init__(self,direction):
+    def __init__(self,direction,difference=0):
         
         if direction=="left":
-            self.circling_velocity=0.01
+            self.circling_velocity=0.02
         else:
-            self.circling_velocity=-0.01
+            self.circling_velocity=-0.02
             
-        self.const_forward_velocity=-0.02
+        self.const_forward_velocity=0.02
         
         self.max_angle=pi/8
         self.min_angle=-0.733
@@ -184,6 +217,8 @@ class AdjustPosition:
         self.min_angle_timer=self.min_angle/2
         
         self.alowed_angled_diff=pi/45
+        
+        self.difference=difference
     
     def entry(self):
         self.forward_velocity=0
@@ -199,9 +234,6 @@ class AdjustPosition:
         #Turning timer
         self.start_time = self.timer
         
-        #Circling speed
-        self.circling_velocity=self.constant_circling_speed
-        
         #starting the lost ball timer
         self.lost_ball_timer=time.time()+5
         
@@ -209,7 +241,7 @@ class AdjustPosition:
         #Storing the current time for the update
         self.current_time=time.time()
         
-        if like(goal_angle()[0],0,self.alowed_angled_diff):
+        if like(goal_angle()[0]-self.difference,0,self.alowed_angled_diff):
                 robotbody.set_eyes_led(0, 31, 0)
                 print("looking at goal")
                 return "done"
@@ -221,6 +253,9 @@ class AdjustPosition:
         
         self.update_head_position()
         self.update_speed()
+        
+    def exit(self):
+        pass
         
     
     #The test that decides if it has lost the ball
@@ -255,15 +290,13 @@ class AdjustPosition:
     #A method that updates which forward speed the robot should use
     #depending on the distance to the ball
     def update_speed(self):
+        self.distance_to_ball=distance_to_ball()
         if self.distance_to_ball> pi*3:
             self.forward_velocity = self.const_forward_velocity;
         elif self.distance_to_ball< pi and self.distance_to_ball>0:
             self.forward_velocity = -self.const_forward_velocity
         else:
             self.forward_velocity = 0
-        
-        if like(goal_angle()[0],0,self.slow_down_time):
-            self.circling_velocity=self.slow_circling_speed
             
         walk.set_velocity(self.forward_velocity, self.circling_velocity, ball_angle()[0])
         
@@ -272,7 +305,7 @@ class TurnGyro:
     """The robot turn a certain angle"""
 
     def __init__(self):
-        self.angle = pi-0.8
+        self.angle = 3.0/4*pi-1.2
         self.number_of_turns = 0
         
     def entry(self):
@@ -289,17 +322,19 @@ class TurnGyro:
             
     def update(self):
         
+        if self.first_post==1:
+            if imu.get_angle()[2]>self.start_angle +self.angle:
+                return "aim for post left"
+        else:
+            if imu.get_angle()[2]<self.start_angle -self.angle:
+                return "aim for post right"
+                
+        
         if goal_angle()[0]*self.first_post<0:
             if self.first_post==1:
                 return "right"
             else:
                 return "left"
-        
-        if imu.get_angle()[2] > self.start_angle + self.angle:
-            if self.first_post==1:
-                return "left"
-            else:
-                return "right"
         
     def exit(self):
         walk.turn_left(0)
@@ -311,7 +346,7 @@ class TurnBackToBall:
         self.direction=direction
     
     def entry(self):
-        set_head_position(0,pi/8)
+        set_head_position([0,pi/8])
         
         if self.direction=="left":
             walk.turn_left(0.4)
