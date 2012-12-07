@@ -42,7 +42,7 @@ def ball_angle():
     
     last_ball = vision.get_ball()
     ball = vision.Ball(last_ball.x,last_ball.y,last_ball.t)
-    angles=ball.get_angle()
+    angles=list(ball.get_angle())
     return angles
 
 # Checks if the robot has fallen
