@@ -156,8 +156,6 @@ class FollowBall:
         #Test if the robot is standing in front of the ball
         self.distance_to_ball=distance_to_ball()
         
-        print (self.distance_to_ball)
-        
         if self.distance_to_ball>0 and self.distance_to_ball<self.distance:
             robotbody.set_eyes_led(0, 31, 0)
             print ("standing in front of ball")

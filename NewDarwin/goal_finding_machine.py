@@ -1,7 +1,7 @@
 from Robot.StateMachines import general_fsm
 import goal_finding_states
 from help_functions import has_fallen
-from math import pi
+from math import pi 
 
 class Program(general_fsm.StateMachine):
     def __init__(self):
@@ -14,10 +14,10 @@ class Program(general_fsm.StateMachine):
         _turn_ever_so_little_to_the_right=goal_finding_states.CircleBall(1,"right")
         _adjust_right=goal_finding_states.AdjustPosition("right")
         _adjust_left=goal_finding_states.AdjustPosition("left")
-        _adjust_left_left_post=goal_finding_states.AdjustPosition("left",-pi/8)
-        _adjust_right_left_post=goal_finding_states.AdjustPosition("right",-pi/8)
-        _adjust_left_right_post=goal_finding_states.AdjustPosition("left",pi/8)
-        _adjust_right_right_post=goal_finding_states.AdjustPosition("right",pi/8)
+        _adjust_left_left_post=goal_finding_states.AdjustPosition("left",-pi/18)
+        _adjust_right_left_post=goal_finding_states.AdjustPosition("right",-pi/18)
+        _adjust_left_right_post=goal_finding_states.AdjustPosition("left",pi/18)
+        _adjust_right_right_post=goal_finding_states.AdjustPosition("right",pi/18)
         
         _look_for_next_post=goal_finding_states.TurnGyro()
         _turn_back_to_ball_left=goal_finding_states.TurnBackToBall("left")
@@ -87,6 +87,12 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_check_team_goal, "turn", _circle_away)
         self.add_transition(_circle_away, "done", self._done)
         
+        self.add_transition(_turn_back_to_ball_left, "lost ball", self._lost_ball)
+        self.add_transition(_turn_back_to_ball_right, "lost ball", self._lost_ball)
+        self.add_transition(_adjust_left_left_post, "lost ball", self._lost_ball)
+        self.add_transition(_adjust_right_left_post, "lost ball", self._lost_ball)
+        self.add_transition(_adjust_left_right_post, "lost ball", self._lost_ball)
+        self.add_transition(_adjust_right_right_post, "lost ball", self._lost_ball)
         self.add_transition(_adjust_right, "lost ball", self._lost_ball)
         self.add_transition(_adjust_left, "lost ball", self._lost_ball)
         self.add_transition(_turn_a_quarter_around_ball, "lost ball", self._lost_ball)
@@ -104,6 +110,6 @@ class Program(general_fsm.StateMachine):
         
         if self.get_state()==self._lost_ball:
             print("lost ball")
-            return "done"
+            return "lost ball"
         
         super(Program,self).update()
