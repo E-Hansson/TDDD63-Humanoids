@@ -38,7 +38,7 @@ def goal_angle_and_type():
     #3 whole goal
     
     last_goal = vision.get_goal()
-    goal = vision.Goal(last_goal.x,last_goal.y,last_goal.z,last_goal.t,robotid.get_team_number())
+    goal = vision.Goal(last_goal.x,last_goal.y,last_goal.z,last_goal.t,robotid.get_team_number(),last_goal.goal_type)
     angles=goal.get_angle()[0]
     return angles,last_goal.goal_type
 

@@ -8,15 +8,17 @@ from Robot.Actions import walk,kick
 class GoalAdjusting:
     
     def __init__(self):
-        self.max_circling_time=20
+        self.max_circling_time=30
         self.forward_speed=0.01
         self.backward_speed=-0.01
         self.circling_speed=0.02
         
+        self.head_turning_speed=2
+        
         self.max_angle=-0.733
         self.min_angle=pi/8
-        self.max_angle_timer=self.max_angle/3
-        self.min_angle_timer=self.min_angle/3
+        self.max_angle_timer=self.min_angle/self.head_turning_speed
+        self.min_angle_timer=self.max_angle/self.head_turning_speed
         
         self.allowed_angle_diff=pi/36
         
@@ -26,24 +28,35 @@ class GoalAdjusting:
         self.current_time=time.time()
         
         #Starts the turning timer
-        self.timer=self.current_time+ self.max_circling_time
+        self.start_time=self.current_time
+        
+        #Resets the control variable if it has turned one complete circle
+        self.one_turn=False
+        
+        #Starts the head timer
+        self.timer=self.current_time
         
         #Starts the counter for how many times it has changed circling speed
-        self.changed_speed_counter=0
+        self.changed_speed=False
         
         #Sets current speed
         self.current_forward_speed=0
         self.current_circling_speed=self.circling_speed
         
         #Starts lost ball timer
-        self.lost_ball_timer=self.current_time+5
+        self.lost_ball_timer=self.current_time+7
         
         #Resets the up and down variable
         self.up_and_down="down"
         
+        #String for print statement, which goal
+        self.which_goal_type=""
+        
         #Resets the goal angle and goal type
         self.goal_angle=None
         self.goal_type=None
+        
+        print("looking for goal")
         
     def update(self):
         
@@ -54,9 +67,6 @@ class GoalAdjusting:
         #Stores current time
         self.current_time=time.time()
         
-        #Stores the distance to the ball
-        self.distance_to_ball=distance_to_ball()
-        
         #Stores whether it has found a new ball observation
         self.has_new_ball_observation=vision.has_new_ball_observation()
         
@@ -64,7 +74,10 @@ class GoalAdjusting:
         
         self.has_new_goal_observation=vision.has_new_goal_observation()
         
-        #Stores the new angle and type if it has new overservation of the goal
+        #Stores the distance to the ball
+        self.distance_to_ball=distance_to_ball()
+        
+        #Stores the new angle and type if it has new observation of the goal
         
         if self.has_new_goal_observation:
             self.goal_angle,self.goal_type=goal_angle_and_type()
@@ -76,16 +89,17 @@ class GoalAdjusting:
         
         #Test if it has found a goal post
         if (self.has_new_goal_observation and self.looking_at_goal())\
-            or self.changed_speed_counter>5:
+            or self.changed_speed and self.current_time>self.start_time:
             robotbody.set_eyes_led(0, 31, 0)
-            print("found goal")
+            print("found goal, " + self.which_goal_type)
             return "done"
         
         #Tests if it is time to abandon the search for a goal
-        if self.current_time > self.start_time + self.time:
+        if self.current_time > self.start_time + self.max_circling_time:
             robotbody.set_eyes_led(0, 0, 31)
             print("lucky shot")
             return "fail"
+
         
         #Updates the head position
         self.update_head_position()
@@ -100,13 +114,23 @@ class GoalAdjusting:
         
     def looking_at_goal(self):
         
-        if (self.goal_type==0 or self.goal_type==3) and like(self.goal_angle,0,self.allowed_angle_diff):
+        print(str(self.goal_type) + "         :           " + str(self.goal_angle))
+        
+        if self.goal_type==3 and like(self.goal_angle,0,self.to_big_angle):
+            self.which_goal_type="middle"
             return True
         
+        elif self.goal_type==0 and  self.head_height()<-4 and \
+            like(self.goal_angle,0,self.allowed_angle_diff):
+            self.which_goal_type="unknown"
+            return True
+
         elif self.goal_type==1 and self.goal_angle-self.allowed_angle_diff>0:
+            self.which_goal_type="left"
             return True
         
         elif self.goal_type==2 and self.goal_angle+self.allowed_angle_diff<0:
+            self.which_goal_type="right"
             return True
         
         else:
@@ -117,15 +141,24 @@ class GoalAdjusting:
             if self.current_time>=self.timer+self.max_angle_timer:
                 self.timer=self.current_time+self.max_angle_timer
                 self.up_and_down="up"
-            else:
-                set_head_position([0,3*(self.current_time-self.timer)])
+            
+            else: 
+                set_head_position([0,self.head_turning_speed*(self.current_time-self.timer)])
         
         else:
             if self.current_time>=self.timer-self.min_angle_timer:
                 self.timer=self.current_time-self.min_angle_timer
                 self.up_and_down="down"
-            else:
-                set_head_position([0,3*(self.timer-self.current_time)])
+            else:    
+                set_head_position([0,self.head_turning_speed*(self.timer-self.current_time)])
+                
+    def head_height(self):
+        
+        if self.up_and_down=="down":
+            return self.head_turning_speed*(self.current_time-self.timer)
+        
+        else:
+            return self.head_turning_speed*(self.timer-self.current_time)
                 
     #A method that updates which forward speed the robot should use
     #depending on the distance to the ball
@@ -143,18 +176,18 @@ class GoalAdjusting:
                 self.current_circling_speed==-self.circling_speed:
                 
                 self.current_circling_speed=self.circling_speed
-                self.changed_speed_counter+=1
-                self.timer=self.current_time+self.max_circling_time
+                self.changed_speed=True
+                self.start_time=self.current_time+2
             
             elif self.goal_type==2 and self.goal_angle>0 and\
                 self.current_circling_speed==self.circling_speed:
                 
                 self.current_circling_speed=-self.circling_speed
-                self.changed_speed_counter-=1
-                self.timer=self.current_time+self.max_circling_time
+                self.changed_speed=True
+                self.start_time=self.current_time+2
                 
             
-        walk.set_velocity(self.current_forward_speed, self.circling_speed, ball_angle()[0])
+        walk.set_velocity(self.current_forward_speed, self.current_circling_speed, ball_angle()[0])
         
         
     #The test that decides if it has lost the ball
@@ -171,7 +204,7 @@ class GoalAdjusting:
     
     def to_long_distance(self):
         
-        return self.distance_to_ball>20 or self.distance_to_ball<0
+        return self.distance_to_ball<0 or self.distance_to_ball>20
     
 class KickBall:
     
@@ -236,7 +269,7 @@ class WalkSpeed:
         #initiates the constant variables
         self.speed = 0.01
         
-        self.distance_to_ball=2.1
+        self.distance_to_ball=2.05
         
     def entry(self):
         #Sets the eyes to a fancy blue
@@ -244,6 +277,8 @@ class WalkSpeed:
 
         #Starts walking forward with the given speed
         walk.walk_forward(self.speed)
+        
+        set_head_position([0,pi/8])
         
         self.lost_ball_timer=time.time()+5
         

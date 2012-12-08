@@ -15,8 +15,7 @@ class CircleBall:
     def __init__(self):
         #setting a few standard variables that will be the same all the time
         self.circling_velocity=0.2
-        self.const_forward_velocity=0.02
-        self.wanted_rotation=pi
+        self.const_forward_velocity=0.01
     
     def entry(self):
         #Reseting the forward velocity from the last time the state was used
@@ -27,14 +26,15 @@ class CircleBall:
         set_head_position(self.wanted_head_position)
         
         #Starting the sideways walk
-        walk.set_velocity(self.forward_velocity, self.circling_velocity, 0)
+        walk.set_velocity(self.forward_velocity, self.circling_velocity, ball_angle()[0])
         
         #Starting the turning timer
         self.start_time = time.time()
         self.time = 10
         
         #starting the lost ball timer
-        self.lost_ball_timer=time.time()+7
+        self.lost_ball_timer=time.time()+4
+
         
         print ("Turning away from our goal")
         
@@ -88,7 +88,7 @@ class CircleBall:
             self.forward_velocity = 0
             
         walk.set_velocity(self.forward_velocity, self.circling_velocity, ball_angle()[0])
-
+            
 
 """ Searches for a goal while walking in a circle around the ball
     If no goal has been found during, approximately, 360 degrees
@@ -291,7 +291,7 @@ class KickBall:
 
 class FollowBall:
     
-    def __init__(self,distance=2*pi,look_down=False):
+    def __init__(self,distance=3,look_down=False):
         #Sets the constant variables for the state
         self.distance=distance
         self.look_down=look_down
@@ -299,7 +299,7 @@ class FollowBall:
         if self.look_down:
             self.speed=0.02
         else:
-            self.speed=0.04
+            self.speed=0.03
         
     #FSM methods
     def entry(self):
@@ -388,7 +388,7 @@ class FollowBall:
         current_head_position = robotbody.get_head_position()
         
         if not like(current_head_position[0],0,pi/18):
-            walk.set_velocity(self.speed,0.2,current_head_position[0])
+            walk.set_velocity(self.speed,0.025,current_head_position[0])
                 
         else:
             walk.set_velocity(self.speed, 0, 0)
@@ -417,7 +417,7 @@ class GetUp:
             
         #Tests if the robot is sitting or standing by checking the
         #angle of the IMU. In not it starts the motion to enter a sitting position
-        if like(imu.get_angle()[1],0.001):
+        if like(imu.get_angle()[1],0.01):
             self.sitting=True
         
         #Test if the robot is finished with the motions

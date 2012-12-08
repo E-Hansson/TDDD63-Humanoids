@@ -75,7 +75,7 @@ class Program(general_fsm.StateMachine):
         self.add_transition(_follow_ball, "done", _aim_at_goal)
         self.add_transition(_aim_at_goal, "done", _check_team_goal)
         
-        self.add_transition(_aim_at_goal, "fail", _circle_away_from_own_goal)
+        self.add_transition(_aim_at_goal, "fail", _stand_in_front_of_ball)
         #self.add_transition(_follow_ball, "done", _finding_the_goal)
 
         #self.add_transition(_finding_the_goal, "done", _center_goal)
@@ -97,6 +97,7 @@ class Program(general_fsm.StateMachine):
         
 
         """ Lost ball transitions """
+        self.add_transition(_aim_at_goal, "lost ball", _track_ball_machine)
         self.add_transition(_follow_ball, "lost ball", _track_ball_machine)
         self.add_transition(_stand_in_front_of_ball, "lost ball", _track_ball_machine)
         self.add_transition(_line_up_shot, "lost ball", _track_ball_machine)
