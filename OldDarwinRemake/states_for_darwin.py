@@ -2,12 +2,349 @@ from Robot.Interface.Sensors import imu, vision
 from Robot.Interface import robotbody
 from Robot.Actions import motion, walk, kick
 from Robot.Util import robotid
-from help_functions import *
-from math import pi, fabs
-
+from help_functions import set_head_position, like, goal_angle_and_type, has_fallen, distance_to_ball, ball_angle
+from math import pi
 import time
+
+
+""" A state to adjust robot to face the goal with the ball between them.
+    There will be four different results of the state
+    since there are four different types of goal Darwin can recognize.
+    1. Found the whole goal --> facing the whole goal
+    2. Found the right post --> facing a bit left of the right post
+    3. Found the left post --> facing a bit right of the left post
+    4. Found an unknown post while the head was high --> facing the unknown post """
+    
+class GoalAdjusting:
+    
+    def __init__(self):
+        #How long time it will take to circle roughly one complete turn around the ball
+        self.max_circling_time=30
+        
+        #Forward/backward speed that will be used to avoid walking into the ball while turning around it
+        self.forward_speed=0.01
+        self.backward_speed=-0.01
+        
+        #How fast the robot will circle around the ball
+        self.circling_speed=0.02
+        
+        #How fast the robot will turn its head (higher is fasater)
+        self.head_turning_speed=2
+        
+        #The maximum angle the robot will turn its head
+        self.max_angle=-0.733
+        self.min_angle=pi/8
+        
+        #The how long time it will take to move the head to the right position
+        self.max_angle_timer=self.min_angle/self.head_turning_speed
+        self.min_angle_timer=self.max_angle/self.head_turning_speed
+        
+        #The allowed angle diff for looking at an unknown post
+        self.allowed_angle_diff=pi/36
+        
+        #The allowed angle diff for looking at the middle of the goal
+        self.to_big_angle=pi/18
+        
+    def entry(self):
+        #saves the current time
+        self.current_time=time.time()
+        
+        #Starts the turning timer
+        self.start_time=self.current_time
+        
+        #Resets the control variable if it has turned one complete circle
+        self.one_turn=False
+        
+        #Starts the head timer
+        self.timer=self.current_time
+        
+        #Starts the counter for how many times it has changed circling speed
+        self.changed_speed=False
+        
+        #Sets current speed
+        self.current_forward_speed=0
+        self.current_circling_speed=self.circling_speed
+        
+        #Starts lost ball timer
+        self.lost_ball_timer=self.current_time+7
+        
+        #Resets the up and down variable
+        self.up_and_down="down"
+        
+        #String for print statement, which goal
+        self.which_goal_type=""
+        
+        #Resets the goal angle and goal type
+        self.goal_angle=None
+        self.goal_type=None
+        
+        print("looking for goal")
+        
+    def update(self):
+        
+        #Tests if it has fallen
+        if has_fallen():
+            return "fallen"
+        
+        #Stores current time
+        self.current_time=time.time()
+        
+        #Stores whether it has found a new ball observation
+        self.has_new_ball_observation=vision.has_new_ball_observation()
+        
+        #Stores whether it has found a new goal observation
+        self.has_new_goal_observation=vision.has_new_goal_observation()
+        
+        #Stores the distance to the ball
+        self.distance_to_ball=distance_to_ball()
+        
+        #Stores the new angle and type if it has new observation of the goal
+        if self.has_new_goal_observation:
+            self.goal_angle,self.goal_type=goal_angle_and_type()
+        
+        #Tests if it has lost the ball
+        if self.has_lost_ball() or self.to_long_distance():
+            print ("lost the ball")
+            return "lost ball"
+        
+        #Test if it has found a goal post
+        if (self.has_new_goal_observation and self.looking_at_goal())\
+            or self.changed_speed and self.current_time>self.start_time:
+            robotbody.set_eyes_led(0, 31, 0)
+            print("found goal, " + self.which_goal_type)
+            return "done"
+        
+        #Tests if it is time to abandon the search for a goal
+        if self.current_time > self.start_time + self.max_circling_time:
+            robotbody.set_eyes_led(0, 0, 31)
+            print("lucky shot")
+            return "fail"
+
+        
+        #Updates the head position
+        self.update_head_position()
+        
+        #Updates the walking speed for the robot
+        self.update_speed()
+        
+        
+    def exit(self):
+        #Reset the walking speed for the robot
+        walk.set_velocity(0, 0, 0)
+        
+    #Tests for looking at the goal
+    def looking_at_goal(self):
+        
+        if self.goal_type==3 and like(self.goal_angle,0,self.to_big_angle):
+            self.which_goal_type="middle"
+            return True
+        
+        elif self.goal_type==0 and  self.head_height()<-4 and \
+            like(self.goal_angle,0,self.allowed_angle_diff):
+            self.which_goal_type="unknown"
+            return True
+
+        elif self.goal_type==1 and self.goal_angle-self.allowed_angle_diff>0:
+            self.which_goal_type="left"
+            return True
+        
+        elif self.goal_type==2 and self.goal_angle+self.allowed_angle_diff<0:
+            self.which_goal_type="right"
+            return True
+        
+        else:
+            return False
+    
+    #Updates the head with the current time as a parameter
+    def update_head_position(self):
+        if self.up_and_down=="down":
+            if self.current_time>=self.timer+self.max_angle_timer:
+                self.timer=self.current_time+self.max_angle_timer
+                self.up_and_down="up"
+            
+            else: 
+                set_head_position([0,self.head_turning_speed*(self.current_time-self.timer)])
+        
+        else:
+            if self.current_time>=self.timer-self.min_angle_timer:
+                self.timer=self.current_time-self.min_angle_timer
+                self.up_and_down="down"
+            else:    
+                set_head_position([0,self.head_turning_speed*(self.timer-self.current_time)])
+    
+    #A simple calculation of the angle the robot has,
+    #needed since we are calculating everything with the time.
+    def head_height(self):
+        if self.up_and_down=="down":
+            return self.head_turning_speed*(self.current_time-self.timer)
+        else:
+            return self.head_turning_speed*(self.timer-self.current_time)
+                
+    #A method that updates which forward speed the robot should use
+    #depending on the distance to the ball
+    def update_speed(self):
+        if self.distance_to_ball> pi*3:
+            self.current_forward_speed = self.forward_speed
+        elif self.distance_to_ball< pi and self.distance_to_ball>0:
+            self.current_forward_speed = self.backward_speed
+        else:
+            self.current_forward_speed = 0
+        
+        #Updates the circling direction if it finds that it's looking to the right of the right post
+        #or if it looks to the left of the left post
+        if self.has_new_goal_observation:
+            
+            if self.goal_type==1 and self.goal_angle<0 and\
+                self.current_circling_speed==-self.circling_speed:
+                
+                self.current_circling_speed=self.circling_speed
+                self.changed_speed=True
+                self.start_time=self.current_time+2
+            
+            elif self.goal_type==2 and self.goal_angle>0 and\
+                self.current_circling_speed==self.circling_speed:
+                
+                self.current_circling_speed=-self.circling_speed
+                self.changed_speed=True
+                self.start_time=self.current_time+2
+                
+        #Sets the new walk instructions
+        walk.set_velocity(self.current_forward_speed, self.current_circling_speed, ball_angle()[0])
+        
+        
+    #The test that decides if it has lost the ball
+    #and a test that updates the lost ball timer if it has a new observation
+    def has_lost_ball(self):
+        if self.current_time>=self.lost_ball_timer:
+            robotbody.set_eyes_led(31, 0, 0)
+            return True
+        
+        if self.has_new_ball_observation:
+            self.lost_ball_timer=self.current_time+7
+        return False
+    
+    #A test if the ball is to far away.
+    #Note that if self.distance_to_ball has a value lower than 0 it is really far away
+    #since the distance is calculated with the use of the heads tilt angle and tan.
+    def to_long_distance(self):
+        return self.distance_to_ball<0 or self.distance_to_ball>20
     
 
+""" A State that will make the robot move sideways until the ball is in front of its left foot.
+    After that it will kick the ball.
+    Note that it only uses the left fot since the config for the kick with the right foot
+    isn't working. """
+
+class KickBall:
+    
+    def __init__(self):
+        #Initiates the constant variable for the program
+        self.time=4
+        
+    def entry(self):
+        #Reset the variables from the last use of the state
+        self.time_since_kick=False
+        
+        #Sets the head to the wanted position and stores the value
+        self.wanted_head_position=[0,pi/8]
+        set_head_position(self.wanted_head_position)
+        
+        print ("kicking the ball")
+        
+    def update(self):
+        
+        #Tests if the robot has fallen
+        if has_fallen():
+            return "fallen"
+        
+        #Tests if the robot hasn't kicked yet.
+        #If it hasn't it will move sideways or kick the ball
+        if not self.time_since_kick:
+            self.move_or_kick()
+        
+        #Test if the time since the last kick is enough for it to
+        #have returned to standing position
+        if self.time_since_kick and time.time()>self.time+self.time_since_kick:
+            return "done"
+        
+    
+    def exit(self):
+        print ("kicked the ball")
+
+    #Decides if the robot should kick the ball or move sideways
+    def move_or_kick(self):
+        #Gets the angles for to the ball
+        self.ball_angle=ball_angle()[0]
+        
+        #If the ball is to the right of the left foot
+        if self.ball_angle<0.1:
+            walk.set_velocity(0, -0.01, 0)
+        
+        #If the ball is to the left of the left foot 
+        elif self.ball_angle>0.47:
+            walk.set_velocity(0, 0.01, 0)
+            
+        #Else it will stop, look up, start the timer since the last kick
+        #and kick with the foot that has the ball in front of it.
+        else:
+            walk.set_velocity(0, 0, 0)
+            set_head_position([0,0])
+            self.time_since_kick = time.time()
+            kick.forward_left()
+         
+         
+""" This state will make the robot walk forward until it's close to the ball,
+    or if it has lost it. """
+    
+class WalkSpeed:
+
+    def __init__(self):
+        #initiates the constant variables
+        self.speed = 0.01
+        
+        #How close will it walk to the ball
+        self.distance_to_ball=2.05
+        
+    def entry(self):
+        #Sets the eyes to a fancy blue
+        robotbody.set_eyes_led(0, 0, 31)
+
+        #Starts walking forward with the given speed
+        walk.walk_forward(self.speed)
+        
+        #Sets the head position down to the ground
+        set_head_position([0,pi/8])
+        
+        #How long it will wait until it has concluded that it has lost the ball
+        self.lost_ball_timer=time.time()+2
+        
+        print("See the robot walk")
+
+    def update(self):
+        
+        #Tests if it has fallen
+        if has_fallen():
+            return "fallen"
+        
+        #Stores the current time for further tests
+        self.current_time=time.time()
+        
+        #Updates the lost ball timer if it has a new ball observation
+        if vision.has_new_ball_observation():
+            self.lost_ball_timer=self.current_time+2
+        
+        #Test if it has lost the ball
+        elif self.current_time>self.lost_ball_timer:
+            return "lost ball"
+        
+        #Test if it is close enought to the ball
+        if distance_to_ball()<=self.distance_to_ball:
+            return "done"
+        
+    def exit(self):
+        print("Exit walk")
+        
+        
 """ Circles approximately, due to the unsteady walking, 180 degrees around the ball """
 
 class CircleBall:
@@ -88,200 +425,6 @@ class CircleBall:
             self.forward_velocity = 0
             
         walk.set_velocity(self.forward_velocity, self.circling_velocity, ball_angle()[0])
-            
-
-""" Searches for a goal while walking in a circle around the ball
-    If no goal has been found during, approximately, 360 degrees
-    it kicks the ball anyhow wishing for the best outcome """
-
-class CrudeGoalAdjusting:
-    
-    def __init__(self,direction):
-        #Initiates the constant variables
-        self.direction=direction
-        self.forward_velocity=0
-        self.const_forward_velocity=0.01
-        self.constant_circling_speed=0.1
-        self.slow_circling_speed=0.02
-        self.max_angle_timer=pi/8
-        self.min_angle_timer=-0.733
-        self.alowed_angled_diff=pi/90
-        self.slow_down_time=pi/45
-        
-        #Turning timers
-        self.time = 40
-        
-    def entry(self):
-        #Reseting the variables from the last use of the state:
-        
-        #Head timers
-        self.timer=time.time()
-        self.up_and_down="up"
-        
-        #Turning timer
-        self.start_time = self.timer
-        
-        #Circling speed
-        self.circling_velocity=self.constant_circling_speed
-        
-        #Lost ball timer
-        self.lost_ball_timer=self.timer+7
-        
-        print("Looking for a goal")
-        
-    def update(self):
-        
-        #Test if the robot has fallen
-        if has_fallen():
-            return "fallen"
-        
-        #Stores the current time for further tests
-        self.current_time=time.time()
-        
-        #Stores whether it have found a new ball observation
-        self.has_new_ball_observation=vision.has_new_ball_observation()
-        
-        self.has_new_goal_observation=vision.has_new_goal_observation()
-        
-        #Stores the current distance to the ball for further tests
-        self.distance_to_ball=distance_to_ball()
-        
-        #Tests if it has lost the ball
-        if self.has_lost_ball() or self.to_long_distance():
-            print ("lost the ball")
-            return "lost ball"
-        
-        #Test if it has found a goal post
-        if self.has_new_goal_observation:
-            if like(goal_angle()[0],0,self.alowed_angled_diff):
-                robotbody.set_eyes_led(0, 31, 0)
-                print("found goal")
-                return "done"
-        
-        #Tests if it is time to abandon the search for a goal
-        if self.current_time > self.start_time + self.time:
-            robotbody.set_eyes_led(0, 0, 31)
-            print("lucky shot")
-            return "fail"
-        
-        #Updates the head position
-        self.update_head_position()
-        
-        #Updates the walking speed for the robot
-        self.update_speed()
-        
-        
-    def exit(self):
-        #Reset the walking speed for the robot
-        walk.set_velocity(0, 0, 0)
-    
-    #Updates the head position by the use of the current time, the max and min angles.
-    def update_head_position(self):
-        if self.up_and_down=="down":
-            if self.current_time>=self.timer+self.max_angle_timer:
-                self.timer=self.current_time+self.max_angle_timer
-                self.up_and_down="up"
-            else:
-                set_head_position([0,self.current_time-self.timer])
-        
-        else:
-            if self.current_time>=self.timer-self.min_angle_timer:
-                self.timer=self.current_time-self.min_angle_timer
-                self.up_and_down="down"
-            else:
-                set_head_position([0,self.timer-self.current_time])
-    
-    #The test that decides if it has lost the ball
-    #and a test that updates the lost ball timer if it has a new observation
-    def has_lost_ball(self):
-        if self.current_time>=self.lost_ball_timer:
-            robotbody.set_eyes_led(31, 0, 0)
-            return True
-        
-        if self.has_new_ball_observation:
-            self.lost_ball_timer=self.current_time+7
-        
-        return False
-    
-    #A method that updates which forward speed the robot should use
-    #depending on the distance to the ball
-    def update_speed(self):
-        if self.distance_to_ball> pi*3:
-            self.forward_velocity = self.const_forward_velocity;
-        elif self.distance_to_ball< pi and self.distance_to_ball>0:
-            self.forward_velocity = -self.const_forward_velocity
-        else:
-            self.forward_velocity = 0
-        
-        if like(goal_angle()[0],0,self.slow_down_time):
-            self.circling_velocity=self.slow_circling_speed
-            self.timer=self.current_time+20
-            
-        walk.set_velocity(self.forward_velocity, self.circling_velocity, ball_angle()[0])
-        
-    def to_long_distance(self):
-        
-        return self.distance_to_ball>20
-
-
-""" The robot kicks the ball and waits for some time after kicking it
-    to avoid getting in a loop in which it believes it's still in front of the ball """
-
-class KickBall:
-    
-    def __init__(self):
-        #Initiates the constant variable for the program
-        self.time=4
-        
-    def entry(self):
-        #Reset the variables from the last use of the state
-        self.time_since_kick=False
-        
-        #Sets the head to the wanted position and stores the value
-        self.wanted_head_position=[0,pi/8]
-        set_head_position(self.wanted_head_position)
-        
-        print ("kicking the ball")
-        
-    def update(self):
-        
-        #Tests if the robot has fallen
-        if has_fallen():
-            return "fallen"
-        
-        #Tests if the robot hasn't kicked yet.
-        #If it hasn't it will move sideways or kick the ball
-        if not self.time_since_kick:
-            self.move_or_kick()
-        
-        #Test if the time since the last kick is enough for it to
-        #have returned to standing position
-        if self.time_since_kick and time.time()>self.time+self.time_since_kick:
-            return "done"
-        
-    
-    def exit(self):
-        print ("kicked the ball")
-
-    #Decides if the robot should kick the ball or move sideways
-    def move_or_kick(self):
-        #Gets the angles for to the ball
-        self.ball_angle=ball_angle()[0]
-        
-        #If they are close to the middle it will move sideways
-        if like(self.ball_angle,0):
-            walk.set_velocity(0, 0.4, 0)
-            
-        #Else it will stop, look up, start the timer since the last kick
-        #and kick with the foot that has the ball in front of it.
-        else:
-            walk.set_velocity(0, 0, 0)
-            set_head_position([0,0])
-            self.time_since_kick = time.time()
-            if self.ball_angle>0:
-                kick.forward_left()
-            else:
-                kick.forward_right()
     
 
 """ The robot follows the ball until it's close enough.
@@ -429,44 +572,6 @@ class GetUp:
         motion.start_walk()
         robotbody.set_eyes_led(0, 0, 31)
         
-        
-
-""" The robot walks forward for some the given time.
-    Optional input is the walking speed which is set to 0.02 by default """
-
-class WalkSpeed:
-    """The robot walks forward some time"""
-
-    def __init__(self, time, speed = 0.04):
-        #initiates the constant variables
-        self.time = time
-        self.speed = speed
-        
-    def entry(self):
-        #Starts the timer
-        self.start_time = time.time()
-        
-        #Sets the eyes to a fancy blue
-        robotbody.set_eyes_led(0, 0, 31)
-
-        #Starts walking forward with the given speed
-        walk.walk_forward(self.speed)
-        
-        print("See the robot walk")
-
-    def update(self):
-        
-        #Tests if the robot has fallen
-        if has_fallen():
-            return "fallen"
-        #Tests if it is time to stop walking
-        
-        if time.time() > self.start_time + self.time:
-            return "timeout"
-        
-    def exit(self):
-        print("Exit walk")
-
 
 """ A state which checks which team the goal in the last
     goal observation belongs to. """
@@ -503,431 +608,3 @@ class CheckTeam:
     def opponents_goal(self):
         goal_team_number = vision.get_goal().team
         return not self.team_id==goal_team_number
-    
-
-""" The robot adjust it's position around the ball so that the ball is between the robot
-    and the middle of the goal """
-            
-class LineUpShot:
-    
-    def entry(self):
-        #Resets all the variables for the last use of the state
-        #The movement timer
-        self.timer=None
-        
-        #The last and first angle to the ball
-        self.first_ball_angle=None
-        self.last_ball_angle=None
-        
-        #The lost ball timer
-        self.lost_ball_timer=time.time()+7
-        
-        #Makes sure that the head hardness is right and sets the
-        #wanted head position to the same as last by looking down at the ball
-        robotbody.set_head_hardness(0.95)
-        self.goal_angle=robotbody.get_head_position()[0]
-        self.wanted_head_position=[self.goal_angle,pi/8]
-        set_head_position(self.wanted_head_position)
-        
-        #Makes the robot stand still since it shouldn't move during while looking
-        walk.set_velocity(0,0,0)
-        
-        print("lining up...")
-        
-    def update(self):
-        
-        #Tests if the robot has fallen
-        if has_fallen():
-            return "fallen"
-        
-        #Stores the value if the robot has a new ball observation for further use
-        self.has_new_ball_observation=vision.has_new_ball_observation()
-        
-        #Stores the current time for further tests
-        self.current_time=time.time()
-        
-        #Tests if the robot has lost the ball
-        if self.has_lost_ball():
-                print("lost ball")
-                return "lost ball"
-        
-        #Tests if it has finished moving,
-        #if the robot already has decided that it had to move
-        if self.timer and self.current_time>self.timer:
-            robotbody.set_eyes_led(0, 0, 31)
-            return "check again"
-        
-        #If the timer has not started yet.
-        #The robot looks for the first ball observation.
-        #If it finds one it starts the timer and stores the angles.
-        if not self.timer:
-            if self.has_new_ball_observation:
-                self.start_timer()
-        
-        else:
-            #If the difference between the goal angle and the first ball angle is less
-            #then 20 degrees it will tell that it has lined up
-            #Otherwise it will start to turn around the ball for some time,
-            #depending on the difference
-            if like(self.first_ball_angle,self.goal_angle,pi/9):
-                robotbody.set_eyes_led(0, 31, 0)
-                print("lined up")
-                return "lined up"
-            
-            self.start_turning()
-        
-            
-    def exit(self):
-        pass
-        
-    #Starts the timer and stores the first ball angles
-    #Also updates the lost ball timer
-    def start_timer(self):
-        self.first_ball_angle=ball_angle()[0]
-        self.timer=self.current_time+20*fabs(self.first_ball_angle)/(2*pi)
-        self.lost_ball_timer=self.current_time+7
-    
-    #Starts the turning or updates the turning depending on if it has
-    #already been started
-    def start_turning(self):
-        
-        #Updates the head position
-        self.last_ball_angle=ball_angle()
-        set_head_position(self.last_ball_angle)
-        
-        #Updates the walking
-        if self.first_ball_angle<0:
-            walk.set_velocity(0, -0.2, self.last_ball_angle[0])
-        else:
-            walk.set_velocity(0, 0.2, self.last_ball_angle[0])
-        
-    #The test that decides if it has lost the ball
-    #and a test that updates the lost ball timer if it has a new observation
-    def has_lost_ball(self):
-        if self.current_time>=self.lost_ball_timer:
-            robotbody.set_eyes_led(31, 0, 0)
-            return True
-        
-        elif vision.has_new_ball_observation():
-            self.lost_ball_timer=self.current_time+7
-            return False
-        
-        else:
-            return False
-
-
-""" Sets the head position to face the middle of the goal,
-    if it can find two pillars within 180 degrees.
-    Sets the head position to one of the pillar if it only can find one.
-    Otherwise calls it a fail. 
-    Note that this state would be a lot better if it was implemented as
-    a state machine. """
-
-class FindMiddleOfGoal:
-    
-    """FSM methods"""
-    
-    def entry(self):
-        #Resets all the variables:
-        
-        #The wanted head position
-        self.wanted_head_position=[-pi/3,-0.733]
-        
-        #The angles it has found to the goal
-        self.angles=[]
-        
-        #The fail timer
-        self.fail_timer=time.time()+7
-        
-        #A couple of boolean variables to help the robot
-        #through the different states of finding the two goal post
-        self.ending=False
-        self.failing=False
-        
-        #Makes sure that the head hardness is right and
-        #updates the position of the head
-        robotbody.set_head_hardness(0.95)  
-        set_head_position(self.wanted_head_position)
-        
-        #Sets the walk speed to the actually zero
-        walk.set_velocity(0, 0, 0)
-
-        print ("searching for goal")
-        
-    def update(self): 
-             
-        #Tests if the robot has fallen
-        if has_fallen():
-            return "fallen"
-        
-        #Stores the if it has a new goal observation for further tests
-        self.has_new_goal_observation=vision.has_new_goal_observation()
-        
-        #Stores the current head position for further tests
-        self.current_head_position=robotbody.get_head_position()[0]
-        
-        self.current_time=time.time()
-        
-        #If the timer has run out or if the robot has failed to find a goal post
-        #it leaves the state depending with a few commands.
-        if self.fail_timer<=self.current_time or self.failing:
-            
-            #If it's not failing it knows that it have found at least one goal post
-            #Then it will update the fail timer so that it has time enough to move
-            #its head towards that direction
-            if not self.failing:
-                self.failing=True
-                self.fail_timer=self.current_time+1
-            
-            #If the timer has run out it's time to leave the state
-            if self.fail_timer<=self.current_time:
-                if len(self.angles)==0:
-                    robotbody.set_eyes_led(31, 0, 0)
-                    print("fail")
-                    return "fail"
-                elif len(self.angles)==1:
-                    robotbody.set_eyes_led(0, 31, 0)
-                    return "focus one"
-                else:
-                    self.focus_middle()
-                    robotbody.set_eyes_led(0, 31, 0)
-                    print("focus middle")
-                    return "focus middle"
-                
-            #If the timer hasn't run out it should focus on whatever it has found
-            else:
-                self.focus_on_results()
-        else:
-            
-            #Tests if it is time to end with only one goal post found
-            if self.ending and like(self.current_head_position,self.angles[0][0]):
-                robotbody.set_eyes_led(0, 31, 0)
-                return "focus one"
-        
-            #Tests if it has found two goal posts
-            if len(self.angles)==2 and \
-                like(self.current_head_position,(self.angles[0][0]+self.angles[1][0])/2):
-                robotbody.set_eyes_led(0, 31, 0)
-                print("focus middle")
-                return "focus middle"
-        
-            #Updates the head position, variables, depending on how many goal post it has found
-            if not self.ending and like(self.current_head_position,self.wanted_head_position[0],pi/45):
-                self.update_values()
-    
-    def exit(self):
-        pass
-    
-    
-    """ Other methods """
-    
-    #Gets the latest goal observation if
-    #they aren't the same as the previous observation.
-    def get_goal_observation(self):
-        
-        temp_angles=list(goal_angle())
-        
-        if len(self.angles)==0 or not like(temp_angles,self.angles[0]):
-            self.angles.append(temp_angles)
-        
-        else:
-            self.focus_one()
-            self.failing=True
-            self.fail_timer=self.current_time+1
-            
-    #Sets the head to search for the next goal post
-    #by moving the head from left to right instead of right to left.
-    def searching_for_next(self):
-        self.wanted_head_position=[pi/3,-0.733]
-        set_head_position(self.wanted_head_position)
-    
-    #Sets the head position to the middle of the two goal post it has found
-    def focus_middle(self):
-        self.wanted_head_position=[(self.angles[0][0]+self.angles[1][0])/2,0]
-        set_head_position(self.wanted_head_position)
-    
-    #Sets the head position to the goal post it has found   
-    def focus_one(self):
-        self.wanted_head_position=list(self.angles[0])
-        set_head_position(self.wanted_head_position)
-        
-    #Sets the next head position for the robot while it searches for a goal post
-    def set_next_head_position(self):
-        if len(self.angles)==0:
-            if like(self.current_head_position,pi/3,pi/45):
-                self.ending=True
-            else:
-                self.wanted_head_position[0]+=pi/30
-        else:
-            if like(self.current_head_position,pi/3,pi/45):
-                self.ending=True
-            else:
-                self.wanted_head_position[0]-=pi/30
-        set_head_position(self.wanted_head_position)
-    
-    #Sets the focus on the results depending on how many goal post
-    #the robot has found
-    def focus_on_results(self):
-        if len(self.angles)==1:
-            self.focus_one()
-        elif len(self.angles)==2:
-            self.focus_middle()
-    
-    #Updates all the values depending on how many goal post the robot has found
-    def update_values(self):
-        
-        #If it haven't found the first goal post
-        if len(self.angles)==0:
-            if self.has_new_goal_observation:
-                self.get_goal_observation()
-                self.searching_for_next()
-                self.fail_timer=time.time()+2
-                print("got first observation")
-
-            else:
-                self.set_next_head_position()
-        
-        #If it already has found one goal post
-        elif len(self.angles)==1:
-            if self.has_new_goal_observation:
-                print ("hej")
-                self.get_goal_observation()
-                if len(self.angles)==2:
-                    self.focus_middle()
-                    print("got second observation")
-                #If it has made two different observation of goal post and they are the same
-                #it will conclude that it was unable to find the second.
-                else:
-                    self.ending=True
-                    
-            else:
-                self.set_next_head_position()
-
-
-""" A state which decide it should turn towards depending
-    on which side its last observation of the ball was. """
-
-class TrackDirection:
-    
-    def entry(self):
-        #Gets the last vision of the ball
-        self.last_ball_angles=ball_angle()[0]
-        
-    def update(self):
-        
-        #Tests which side it lost it on
-        if self.last_ball_angles>=0:
-            return "left"
-        else:
-            return "right"
-        
-    def exit (self):
-        pass
-    
-    
-""" A state in which the robot tracks the ball over the field.
-    If it can't find the goal while having turned in a, approximately, complete circle
-    it calls out that it can't find the ball and goes to the next state """
-    
-class TrackBall:
-    
-    def __init__(self,direction):
-    
-        #Initiates the constant variables for:
-        #Turning head and body
-        self.max_time_difference=pi/3
-        self.angle=2*pi
-        self.time_between=1
-        self.direction=direction
-        self.highest_head_position=-0.733
-        self.lowest_head_position=pi/8
-        
-    def entry(self):
-        
-        #Resets the variables since the last use of the state:
-        
-        #starting angle
-        self.start_angle = imu.get_angle()[2]
-        
-        #Timers
-        self.start_time=time.time()
-        self.timer=self.start_time+self.time_between
-        
-        #Which direction it should start turning its head
-        self.left_or_right=self.direction
-        
-        #Makes sure that the head hardness is correct and
-        #stores the current head position
-        robotbody.set_head_hardness(0.95)
-        self.wanted_head_position=robotbody.get_head_position()
-        
-        #Initiates the turn in the right direction
-        if self.direction=="left":
-            walk.turn_left(0.2)
-        else:
-            walk.turn_right(0.2)
-            
-        #Sets a fancy blue eye colour
-        robotbody.set_eyes_led(0, 0, 31)
-            
-        print("Tracking ball")
-        
-    def update(self):
-        
-        #Tests if the robot has fallen
-        if has_fallen():
-            return "fallen"
-        
-        #Tests if it has found a ball observation
-        if vision.has_new_ball_observation():
-            walk.turn_left(0)
-            robotbody.set_eyes_led(0, 31, 0)
-            print("found ball")
-            return "done"
-        
-        #Tests if it's time to stop turning and accept a failure
-        if imu.get_angle()[2] > self.start_angle + self.angle:
-            walk.turn_left(0)
-            robotbody.set_eyes_led(31,0,0)
-            print ("can't find the ball")
-            return "out of sight"
-        
-        #Updates the head position
-        self.update_head_position()
-        
-    def exit(self):
-        pass
-        
-    #Updates the head position with time as the variable.
-    def update_head_position(self):
-        self.current_time=time.time()
-        if self.left_or_right=="left":
-            if self.current_time>=self.timer+self.max_time_difference:
-                self.timer=self.current_time+self.max_time_difference
-                self.wanted_head_position[1]=self.highest_head_position
-                self.left_or_right="right"
-            else:
-                self.wanted_head_position[0]=self.current_time-self.timer
-        
-        else:
-            if self.current_time>=self.timer+self.max_time_difference:
-                self.timer=self.current_time+self.max_time_difference
-                self.wanted_head_position[1]=self.lowest_head_position
-                self.left_or_right="left"
-            else:
-                self.wanted_head_position[0]=-(self.current_time-self.timer)
-            
-        set_head_position(self.wanted_head_position)
-
-
-"""        System states        """
-
-class Exit:
-    def __init__(self):
-        pass
-    def entry(self):
-        motion.stop_walk()
-    def update(self):
-        pass
-    def exit(self):
-        pass

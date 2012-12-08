@@ -149,7 +149,11 @@ class TrackBall:
                 self.wanted_head_position[0]=-(self.current_time-self.timer)
             
         set_head_position(self.wanted_head_position)
-        
+
+
+""" A state with the only purpose to tell the Track Ball Machine
+    that it s done. """
+    
 class Done:
     
     def entry(self):
