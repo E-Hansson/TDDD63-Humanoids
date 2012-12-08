@@ -7,6 +7,43 @@ from math import pi, fabs
 
 import time
 
+class WalkSpeed:
+    """The robot walks forward some time"""
+
+    def __init__(self):
+        #initiates the constant variables
+        self.speed = 0.01
+        
+    def entry(self):
+        #Sets the eyes to a fancy blue
+        robotbody.set_eyes_led(0, 0, 31)
+
+        #Starts walking forward with the given speed
+        walk.walk_forward(self.speed)
+        
+        self.lost_ball_timer=time.time()+5
+        
+        print("See the robot walk")
+
+    def update(self):
+        
+        if has_fallen():
+            return "fallen"
+        
+        self.current_time=time.time()
+        
+        if vision.has_new_ball_observation():
+            self.lost_ball_timer=self.current_time+2
+        
+        elif self.current_time>self.lost_ball_timer:
+            return "lost ball"
+        
+        if distance_to_ball()<=2.1:
+            return "done"
+        
+    def exit(self):
+        print("Exit walk")
+
 """ The robot kicks the ball and waits for some time after kicking it
     to avoid getting in a loop in which it believes it's still in front of the ball """
 
@@ -52,8 +89,11 @@ class KickBall:
         self.ball_angle=ball_angle()[0]
         
         #If they are close to the middle it will move sideways
-        if like(self.ball_angle,0):
-            walk.set_velocity(0, 0.4, 0)
+        if not like(self.ball_angle,0.2,0.1):
+            walk.set_velocity(0, -0.01, 0)
+        
+        elif self.ball_angle>0.47:
+            walk.set_velocity(0, 0.01, 0)
             
         #Else it will stop, look up, start the timer since the last kick
         #and kick with the foot that has the ball in front of it.
@@ -61,10 +101,7 @@ class KickBall:
             walk.set_velocity(0, 0, 0)
             set_head_position([0,0])
             self.time_since_kick = time.time()
-            if self.ball_angle>0:
-                kick.forward_left()
-            else:
-                kick.forward_right()
+            kick.forward_left()
     
 
 """ The robot follows the ball until it's close enough.
@@ -74,7 +111,7 @@ class KickBall:
 
 class FollowBall:
     
-    def __init__(self,distance=2*pi,look_down=False):
+    def __init__(self,distance=2*pi+0.3,look_down=False):
         #Sets the constant variables for the state
         self.distance=distance
         self.look_down=look_down
@@ -82,7 +119,7 @@ class FollowBall:
         if self.look_down:
             self.speed=0.02
         else:
-            self.speed=0.04
+            self.speed=0.03
         
     #FSM methods
     def entry(self):
@@ -118,6 +155,7 @@ class FollowBall:
         
         #Test if the robot is standing in front of the ball
         self.distance_to_ball=distance_to_ball()
+        
         if self.distance_to_ball>0 and self.distance_to_ball<self.distance:
             robotbody.set_eyes_led(0, 31, 0)
             print ("standing in front of ball")
@@ -130,7 +168,7 @@ class FollowBall:
         self.update_walk_direction()
         
     def exit(self):
-        pass
+        walk.set_velocity(-0.001, 0, 0)
     
     #Methods used by the FSM
     
@@ -171,7 +209,7 @@ class FollowBall:
         current_head_position = robotbody.get_head_position()
         
         if not like(current_head_position[0],0,pi/18):
-            walk.set_velocity(self.speed,0.2,current_head_position[0])
+            walk.set_velocity(self.speed,0.025,current_head_position[0])
                 
         else:
             walk.set_velocity(self.speed, 0, 0)
@@ -200,7 +238,7 @@ class GetUp:
             
         #Tests if the robot is sitting or standing by checking the
         #angle of the IMU. In not it starts the motion to enter a sitting position
-        if like(imu.get_angle()[1],0.001):
+        if like(imu.get_angle()[1],0.01):
             self.sitting=True
         
         #Test if the robot is finished with the motions

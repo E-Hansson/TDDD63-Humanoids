@@ -1,7 +1,7 @@
 from Robot.StateMachines import general_fsm
 import states_for_darwin
 import goal_finding_machine
-import track_ball_states
+import track_ball_machine
 
 
 class Program(general_fsm.StateMachine):
@@ -11,14 +11,14 @@ class Program(general_fsm.StateMachine):
 
         """ ball interaction states"""
         _follow_ball = states_for_darwin.FollowBall()
-        _stand_in_front_of_ball = states_for_darwin.FollowBall(2,True)
+        _stand_in_front_of_ball = states_for_darwin.WalkSpeed()
         
         _kick_ball = states_for_darwin.KickBall()
         
         
         """ Tracking states """
         
-        _track_ball=track_ball_states.Program()
+        _track_ball=track_ball_machine.Program()
 
 
         """ goal interaction states """
