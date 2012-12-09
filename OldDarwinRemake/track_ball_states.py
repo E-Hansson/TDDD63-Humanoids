@@ -6,7 +6,7 @@ from math import pi
 from Robot.Interface.Sensors import imu, vision
 
 """ The robot walks forward for some the given time.
-    Optional input is the walking speed which is set to 0.02 by default """
+    Optional input is the walking speed which is set to 0.04 by default """
 
 class WalkSpeed:
     """The robot walks forward some time"""
