@@ -32,7 +32,7 @@ class GoalAdjusting:
         self.head_turning_speed=2
         
         #The maximum angle the robot will turn its head
-        self.max_angle=-0.733
+        self.max_angle=-0.799
         self.min_angle=pi/8
         
         #The how long time it will take to move the head to the right position
@@ -58,6 +58,12 @@ class GoalAdjusting:
         #Starts the head timer
         self.timer=self.current_time
         
+        #Starts the adjustment timer
+        self.adjustment_timer=None
+        
+        #Starts the unknown counter
+        self.counter=0
+        
         #Starts the counter for how many times it has changed circling speed
         self.changed_speed=False
         
@@ -77,6 +83,9 @@ class GoalAdjusting:
         #Resets the goal angle and goal type
         self.goal_angle=None
         self.goal_type=None
+        
+        #Adjusting
+        self.adjusting=False
         
         print("looking for goal")
         
@@ -107,6 +116,12 @@ class GoalAdjusting:
             print ("lost the ball")
             return "lost ball"
         
+        #Tests the adjustment timer
+        if self.adjustment_timer and self.current_time>=self.adjustment_timer:
+            robotbody.set_eyes_led(0, 31, 0)
+            print("probably looking at goal")
+            return "done"
+        
         #Test if it has found a goal post
         if (self.has_new_goal_observation and self.looking_at_goal())\
             or self.changed_speed and self.current_time>self.start_time:
@@ -135,22 +150,83 @@ class GoalAdjusting:
     #Tests for looking at the goal
     def looking_at_goal(self):
         
-        if self.goal_type==3 and like(self.goal_angle,0,self.to_big_angle):
-            self.which_goal_type="middle"
-            return True
+        print (str(self.goal_type)+"         :        "+str(self.goal_angle))
         
-        elif self.goal_type==0 and  self.head_height()<-4 and \
-            like(self.goal_angle,0,self.allowed_angle_diff):
-            self.which_goal_type="unknown"
-            return True
+        if self.goal_type==3:
+            
+            if like(self.goal_angle,0,self.to_big_angle):
+                self.which_goal_type="middle"
+                return True
+            
+            elif not self.adjusting and self.goal_angle>0:
+                self.adjustment_timer=self.goal_angle*15/pi
+                self.current_circling_speed=self.circling_speed
+                self.adjusting=True
+                return False
+            
+            elif self.goal_angle<0:
+                self.adjustment_timer=-self.goal_angle*15/pi
+                self.current_circling_speed=-self.circling_speed
+                self.adjusting=True
+                return False
+                
 
-        elif self.goal_type==1 and self.goal_angle-self.allowed_angle_diff>0:
-            self.which_goal_type="left"
-            return True
+        elif self.goal_type==2:
+            if self.goal_angle<-self.allowed_angle_diff and self.goal_angle>-pi/6:
+                self.which_goal_type="right"
+                return True
+            
+            elif not self.adjusting and self.goal_angle>-self.allowed_angle_diff:
+                self.adjustment_timer=self.current_time+abs(self.allowed_angle_diff+self.goal_angle)*15/pi
+                self.current_circling_speed=self.circling_speed
+                self.adjusting=True
+                return False
+            
+            elif not self.adjusting and self.goal_angle<-pi/6:
+                self.adjustment_timer=self.current_time+(-self.goal_angle-self.allowed_angle_diff)*15/pi
+                self.current_circling_speed=-self.circling_speed
+                self.adjusting=True
+                return False
         
-        elif self.goal_type==2 and self.goal_angle+self.allowed_angle_diff<0:
-            self.which_goal_type="right"
-            return True
+        elif self.goal_type==1:
+            if self.goal_angle>self.allowed_angle_diff and self.goal_angle<pi/6:
+                self.which_goal_type="left"
+                return True
+            
+            elif not self.adjusting and self.goal_angle<self.allowed_angle_diff:
+                self.adjustment_timer=self.current_time+(self.allowed_angle_diff-self.goal_angle)*15/pi
+                self.current_circling_speed=-self.circling_speed
+                self.adjusting=True
+                return False
+            
+            elif not self.adjusting and self.goal_angle>pi/6:
+                self.adjustment_timer=self.current_time+(self.goal_angle-self.allowed_angle_diff)*15/pi
+                self.current_circling_speed=self.circling_speed
+                self.adjusting=True
+                return False
+        
+        elif self.goal_type==0:
+            if like(self.goal_angle,0,pi/36):
+                self.counter+=1
+                
+            if not self.adjusting and self.counter>=10:
+                if like(self.goal_angle,0,self.allowed_angle_diff):
+                    self.which_goal_type="unknown"
+                    return True
+            
+                elif not self.adjusting and self.goal_angle>0:
+                    self.adjustment_timer=self.goal_angle*15/pi
+                    self.current_circling_speed=self.circling_speed
+                    self.adjusting=True
+                    return False
+                
+                elif self.goal_angle<0:
+                    self.adjustment_timer=-self.goal_angle*15/pi
+                    self.current_circling_speed=-self.circling_speed
+                    self.adjusting=True
+                    return False
+            else:
+                return False
         
         else:
             return False
@@ -511,17 +587,10 @@ class FollowBall:
     #Updates the position of the head to look at the ball
     def update_head_position(self):
         angles=ball_angle()
-        if angles[0]>pi/3:
-            self.wanted_head_position[0]=pi/3
-        elif angles[0]<-pi/3:
-            self.wanted_head_position[0]=-pi/3
-        else:
-            self.wanted_head_position[0]=angles[0]
         
-        if angles[1]>pi/8:
-            self.wanted_head_position[1]=pi/8
-        else:
-            self.wanted_head_position[1]=angles[1]
+        self.wanted_head_position[0]=angles[0]
+        
+        self.wanted_head_position[1]=angles[1]
             
         set_head_position(self.wanted_head_position)
     
